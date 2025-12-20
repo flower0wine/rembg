@@ -4,7 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { normalizeError } from "@/lib/utils";
+import { toError } from "@/lib/utils/error.util";
 
 interface AuthState {
   user: User | null;
@@ -38,7 +38,7 @@ export function useAuth() {
         setState({
           user: null,
           loading: false,
-          error: normalizeError(error)
+          error: toError(error)
         });
       }
     };
@@ -106,7 +106,7 @@ export function useAuth() {
       return { data: result.data ?? null, error: null };
     }
     catch (error) {
-      const err = normalizeError(error);
+      const err = toError(error);
       setState(prev => ({ ...prev, loading: false, error: err }));
       return { data: null, error: err };
     }

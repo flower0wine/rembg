@@ -5,7 +5,7 @@ import { ErrorCode } from "@/lib/types";
 import {
   getRecaptchaSecretKey,
   verifyRecaptchaToken,
-} from "@/lib/utils/recaptcha";
+} from "@/lib/utils/recaptcha.util";
 
 /**
  * Request body for reCAPTCHA verification

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { checkUsageLimit } from "@/lib/utils/usage-limiter";
+import { checkUsageLimit } from "@/lib/utils/usage-limiter.util";
 
 /**
  * API route to check usage limits for a user or guest

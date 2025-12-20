@@ -22,7 +22,7 @@ import {
   batchRemoveBackground,
   processSingleBatchItem,
 } from "@/lib/api/background-removal";
-import { getSessionFingerprint } from "@/lib/utils/fingerprint";
+import { getSessionFingerprint } from "@/lib/utils/fingerprint.util";
 
 /**
  * Input for batch removal mutation

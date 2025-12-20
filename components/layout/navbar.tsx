@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ROUTES } from "@/lib/constants/routes";
-import { cn } from "@/lib/utils/cn";
+import { cn } from "@/lib/utils/cn.util";
 
 const navItems = [
   { href: ROUTES.HOME, label: "首页" },

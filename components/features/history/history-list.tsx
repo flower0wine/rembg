@@ -4,7 +4,7 @@ import type { ProcessingHistory } from "@/lib/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { downloadImage } from "@/lib/utils/download";
+import { downloadImage } from "@/lib/utils/download.util";
 import { HistoryItem } from "./history-item";
 
 interface HistoryListProps {

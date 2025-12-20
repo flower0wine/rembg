@@ -12,7 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 import { removeBackground } from "@/lib/api/background-removal";
-import { getSessionFingerprint } from "@/lib/utils/fingerprint";
+import { getSessionFingerprint } from "@/lib/utils/fingerprint.util";
 
 /**
  * Input for background removal mutation

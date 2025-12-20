@@ -5,7 +5,7 @@
 
 import type { RemoveBackgroundRequest, RemoveBackgroundResponse } from "@/lib/types";
 
-import { apiClient } from "./client";
+import apiClient from "./axios";
 import {
   mockBatchRemoveBackground,
   mockProcessSingleBatchItem,
