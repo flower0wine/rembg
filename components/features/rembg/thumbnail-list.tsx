@@ -92,8 +92,8 @@ export function ThumbnailList({
                   )}
 
                   <Image
-                    src={image.processedImage || image.preview}
-                    alt={image.file.name}
+                    src={image.processedImageUrl || image.originImageUrl}
+                    alt={image.originImageFile.name}
                     fill
                     sizes="80px"
                     className="object-cover hover:scale-105 duration-300 transition-all"
@@ -190,10 +190,10 @@ export function ThumbnailList({
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
-                          const link = image.processedImage || image.preview;
+                          const link = image.processedImageUrl || image.originImageUrl;
                           const a = document.createElement("a");
                           a.href = link;
-                          a.download = image.file.name.replace(/\.[^/.]+$/, "-processed.png");
+                          a.download = image.originImageFile.name.replace(/\.[^/.]+$/, "-processed.png");
                           document.body.appendChild(a);
                           a.click();
                           document.body.removeChild(a);
@@ -205,7 +205,7 @@ export function ThumbnailList({
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
-                          const link = image.processedImage || image.preview;
+                          const link = image.processedImageUrl || image.originImageUrl;
                           navigator.clipboard.writeText(link);
                         }}
                       >

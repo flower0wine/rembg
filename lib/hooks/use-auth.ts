@@ -2,7 +2,7 @@
 
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toError } from "@/lib/utils/error.util";
 
@@ -20,6 +20,7 @@ export function useAuth() {
   });
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const currentUserRef = useRef<User>(undefined);
 
   // Initialize auth state
   useEffect(() => {
@@ -48,6 +49,8 @@ export function useAuth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        const newUser = session?.user ?? null;
+
         // Update state for all events
         setState({
           user: session?.user ?? null,
@@ -55,10 +58,12 @@ export function useAuth() {
           error: null,
         });
 
+        currentUserRef.current = session?.user;
+
         // Define which events should trigger a router refresh
         // Only refresh on user-initiated actions that change auth state
         const shouldRefresh = !isInitialLoad && (
-          event === "SIGNED_IN" // User just signed in
+          (event === "SIGNED_IN" && currentUserRef.current === null && newUser !== null) // User just signed in
           || event === "SIGNED_OUT" // User just signed out
           || event === "PASSWORD_RECOVERY" // User is recovering password
           || event === "USER_UPDATED" // User profile was updated (e.g., email change)

@@ -11,12 +11,12 @@ export enum ImageStatus {
 
 export interface ImageItem {
   id: string;
-  file: File;
-  preview: string; // 预览URL
+  originImageFile: File;
+  originImageUrl: string; // 预览URL
   status: ImageStatus;
   progress: number; // 0-100
-  processedImage?: string; // 处理后的图片URL
-  error?: string;
+  processedImageUrl?: string; // 处理后的图片URL
+  error?: Error;
 }
 
 export interface UploadError {

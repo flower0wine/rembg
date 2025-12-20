@@ -13,7 +13,7 @@ export const api = axios.create({
   baseURL: isBrowser
     ? "/api"
     : `${process.env.NEXT_PUBLIC_BACKEND_POINT}/api`,
-  timeout: 60_000,
+  timeout: 600_000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -58,17 +58,6 @@ api.interceptors.response.use(
       console.log("📦 Response:", response.data);
     }
 
-    if (!response.data.ok) {
-      // 业务错误：HTTP 200 但 ok=false
-      const error = ApiError.businessError(
-        response.data.message || "Unknown error",
-        response.data.code,
-        response.data.data,
-        response.data.error,
-      );
-      return Promise.reject(error);
-    }
-
     return Promise.resolve(response);
   },
   async (error: AxiosError) => {
@@ -90,15 +79,7 @@ api.interceptors.response.use(
       console.error("🚨 Error:", error.response?.data || error.message);
     }
 
-    // 将 AxiosError 转换为 ApiError，保留更多上下文
-    const apiError = ApiError.networkError(
-      error.message || "Network error",
-      error.response?.status
-    );
-    // 保留原始的 AxiosError 信息
-    (apiError as any).originalError = error;
-
-    return Promise.reject(apiError);
+    return Promise.reject(error);
   },
 );
 

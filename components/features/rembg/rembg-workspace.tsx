@@ -6,9 +6,12 @@
 
 import type { ImageItem, UploadError } from "./types";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useCallback } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
+import { useRemoveBackground } from "@/lib/request/query/use-remove-background";
+import { toError } from "@/lib/utils";
+import { FullscreenDropZone } from "./fullscreen-drop-zone";
 import { ProcessingPanel } from "./processing-panel";
 import {
   addImagesAtom,
@@ -30,30 +33,54 @@ export function RembgWorkspace() {
   const removeImage = useSetAtom(removeImageAtom);
   const updateImage = useSetAtom(updateImageAtom);
 
-  // 模拟处理过程（实际应该调用API）
-  const simulateProcessing = async (_id: string) => {
-    // 模拟上传进度
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      // TODO: 更新进度
+  // 使用背景移除API
+  const { mutateAsync: removeBackground } = useRemoveBackground();
+
+  // 处理图片背景移除
+  const processImage = async (id: string, file: File) => {
+    try {
+      // 更新状态为处理中
+      updateImage({
+        id,
+        updates: {
+          status: ImageStatus.Processing,
+          progress: 50,
+        }
+      });
+
+      // 调用背景移除API
+      const resultBlob = await removeBackground({ imageFile: file });
+
+      // 创建处理后的图片URL
+      const processedUrl = URL.createObjectURL(resultBlob);
+
+      // 更新为完成状态
+      updateImage({
+        id,
+        updates: {
+          status: ImageStatus.Completed,
+          processedImageUrl: processedUrl,
+          progress: 100,
+        }
+      });
+
+      toast.success("背景移除成功");
     }
-    updateImage({
-      id: _id,
-      updates: {
-        status: ImageStatus.Processing
-      }
-    });
+    catch (error) {
+      // 更新为错误状态
+      updateImage({
+        id,
+        updates: {
+          status: ImageStatus.Error,
+          error: toError(error)
+        }
+      });
 
-    // TODO: 调用实际的背景移除API
-    // 现在只是模拟完成
-    await new Promise(resolve => setTimeout(resolve, 1000));
+      console.error(toError(error));
 
-    updateImage({
-      id: _id,
-      updates: {
-        status: ImageStatus.Error
-      }
-    });
+
+      toast.error("背景移除失败");
+    }
   };
 
   // 处理文件选择
@@ -61,13 +88,10 @@ export function RembgWorkspace() {
     const newImages: ImageItem[] = [];
 
     for (const file of files) {
-      // 创建预览URL
-      const preview = URL.createObjectURL(file);
-
       const imageItem: ImageItem = {
         id: uuidv4(),
-        file,
-        preview,
+        originImageFile: file,
+        originImageUrl: URL.createObjectURL(file),
         status: ImageStatus.Uploading,
         progress: 0,
       };
@@ -77,10 +101,9 @@ export function RembgWorkspace() {
 
     addImages(newImages);
 
-    // TODO: 这里应该调用实际的上传和处理API
-    // 现在只是模拟处理过程
+    // 处理每张图片
     for (const image of newImages) {
-      simulateProcessing(image.id);
+      processImage(image.id, image.originImageFile);
     }
   };
 
@@ -93,9 +116,9 @@ export function RembgWorkspace() {
   const handleRemove = (id: string) => {
     const image = images.find(img => img.id === id);
     if (image) {
-      URL.revokeObjectURL(image.preview);
-      if (image.processedImage) {
-        URL.revokeObjectURL(image.processedImage);
+      URL.revokeObjectURL(image.originImageUrl);
+      if (image.processedImageUrl) {
+        URL.revokeObjectURL(image.processedImageUrl);
       }
     }
     removeImage(id);
@@ -107,31 +130,43 @@ export function RembgWorkspace() {
   };
 
   return (
-    <div className="space-y-6 w-full">
-      {/* 主面板区域 */}
-      <div className="w-full">
-        {selectedImage
-          ? (
-              <ProcessingPanel image={selectedImage} />
-            )
-          : (
-              <UploadPanel
-                onFilesSelected={handleFilesSelected}
-                onError={handleUploadError}
-              />
-            )}
-      </div>
+    <FullscreenDropProvider
+      value={{
+        onFilesSelected: handleFilesSelected,
+        onError: handleUploadError,
+      }}
+    >
+      <FullscreenDropZone
+        onFilesSelected={handleFilesSelected}
+        onError={handleUploadError}
+      >
+        <div className="space-y-6 w-full">
+          {/* 主面板区域 */}
+          <div className="w-full">
+            {selectedImage
+              ? (
+                  <ProcessingPanel image={selectedImage} />
+                )
+              : (
+                  <UploadPanel
+                    onFilesSelected={handleFilesSelected}
+                    onError={handleUploadError}
+                  />
+                )}
+          </div>
 
-      {/* 缩略图列表 */}
-      {images.length > 0 && (
-        <ThumbnailList
-          images={images}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onRemove={handleRemove}
-          onAddMore={handleAddMore}
-        />
-      )}
-    </div>
+          {/* 缩略图列表 */}
+          {images.length > 0 && (
+            <ThumbnailList
+              images={images}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onRemove={handleRemove}
+              onAddMore={handleAddMore}
+            />
+          )}
+        </div>
+      </FullscreenDropZone>
+    </FullscreenDropProvider>
   );
 }

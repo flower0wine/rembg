@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { FullscreenDropZone } from "@/components/features/rembg";
+import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
 
 export const metadata: Metadata = {
   title: "背景移除应用",
@@ -18,10 +20,12 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <Header />
-      <main className="min-h-screen">{children}</main>
-      <Footer />
-    </>
+    <FullscreenDropProvider>
+      <FullscreenDropZone>
+        <Header />
+        <main className="min-h-screen">{children}</main>
+        <Footer />
+      </FullscreenDropZone>
+    </FullscreenDropProvider>
   );
 }
