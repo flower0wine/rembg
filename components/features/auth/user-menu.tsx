@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ROUTES } from "@/lib/constants/routes";
+import { setToken } from "@/lib/utils/browser";
 
 export function UserMenu() {
   const { user, signOut } = useAuthContext();
@@ -41,6 +42,8 @@ export function UserMenu() {
       });
     }
     else {
+      // 清除token
+      setToken();
       toast.success("已退出登录");
     }
   };

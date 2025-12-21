@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROUTES } from "@/lib/constants/routes";
+import { getSubscriptionStatus } from "@/lib/request/api/subscription";
 
 const registerSchema = z.object({
   email: z.email("请输入有效的邮箱地址"),
@@ -50,10 +51,15 @@ export function RegisterForm() {
       setIsLoading(false);
     }
     else {
-      toast.success("注册成功", {
-        description: "请查看您的邮箱以验证账户",
-      });
-      router.push(ROUTES.APP);
+      // 注册成功后获取订阅信息和token
+      try {
+        await getSubscriptionStatus();
+        router.push(ROUTES.APP);
+      }
+      catch (err) {
+        console.error("Failed to fetch subscription:", err);
+        router.push(ROUTES.APP);
+      }
     }
   };
 

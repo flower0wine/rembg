@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS processing_history (
   processed_image_url TEXT NOT NULL,
   original_filename TEXT NOT NULL,
   file_size INTEGER NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 -- Create indexes for efficient querying

@@ -9,7 +9,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
-import { useRemoveBackground } from "@/lib/request/query/use-remove-background";
+import { useRemoveBackground } from "@/lib/hooks/use-remove-background";
 import { toError } from "@/lib/utils";
 import { FullscreenDropZone } from "./fullscreen-drop-zone";
 import { ProcessingPanel } from "./processing-panel";

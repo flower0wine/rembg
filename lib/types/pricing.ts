@@ -1,22 +1,33 @@
 /**
  * Pricing component props type definitions
+ * 前端展示用的定价数据类型（与数据库结构解耦）
  */
 
-export interface PricingPlan {
-  id: string;
-  name: string;
-  description: string;
-  monthlyPrice: number;
-  annualPrice: number;
-  features: string[];
-  highlighted?: boolean;
-  ctaText: string;
-}
+import type { SubscriptionPlan } from "./user";
 
-export interface PricingCardProps {
-  plan: PricingPlan;
-  billingPeriod: "monthly" | "annual";
-  onSelect: (planId: string) => void;
+/**
+ * 前端定价卡片数据
+ */
+export interface PricingPlanData {
+  id: string;
+  plan: SubscriptionPlan;
+  displayName: string;
+  description: string;
+  monthlyPrice: number; // 单位：美元
+  annualPrice: number; // 单位：美元
+  features: string[];
+  isFeatured: boolean;
+  limits: {
+    maxUsageLimit: number;
+    maxFileSize: number; // MB
+    maxBatchSize: number;
+  };
+  capabilities: {
+    hasApiAccess: boolean;
+    hasPrioritySupport: boolean;
+    hasAdvancedAnalytics: boolean;
+    hasCustomBranding: boolean;
+  };
 }
 
 export interface PricingToggleProps {

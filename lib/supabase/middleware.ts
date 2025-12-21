@@ -1,8 +1,9 @@
 import type { NextRequest } from "next/server";
-import type { Database } from "./types";
+import type { Database } from "./database.types";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import { ROUTES } from "@/lib/constants/routes";
+import { ensureUserSubscription } from "./subscription";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -37,6 +38,17 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // 如果用户已登录，检查并确保有订阅记录
+  if (user) {
+    try {
+      await ensureUserSubscription(supabase, user.id);
+    }
+    catch (error) {
+      // 静默失败，不影响用户访问
+      console.error("Failed to ensure user subscription:", error);
+    }
+  }
 
   // Protected routes that require authentication
   const protectedRoutes = [ROUTES.HISTORY, ROUTES.APP];

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ProcessingHistoryInsert } from "@/lib/supabase/types";
+import type { TablesInsert } from "@/lib/supabase/database.types";
 import type { ProcessingHistory } from "@/lib/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
@@ -113,7 +113,7 @@ export function useCreateHistory() {
 
   return useMutation({
     mutationFn: async (
-      historyData: Omit<ProcessingHistoryInsert, "user_id">
+      historyData: Omit<TablesInsert<"processing_history">, "user_id">
     ): Promise<ProcessingHistory> => {
       // Get current user
       const {
@@ -126,7 +126,7 @@ export function useCreateHistory() {
       }
 
       // Prepare insert data with proper typing
-      const insertData: ProcessingHistoryInsert = {
+      const insertData: TablesInsert<"processing_history"> = {
         original_image_url: historyData.original_image_url,
         processed_image_url: historyData.processed_image_url,
         original_filename: historyData.original_filename,
@@ -134,24 +134,9 @@ export function useCreateHistory() {
         user_id: user.id,
       };
 
-      /**
-       * Type assertion explanation:
-       * Supabase's @supabase/ssr (v0.8.0) has a known TypeScript limitation where
-       * the generic Database type causes the insert() method's parameter type to be
-       * incorrectly inferred as 'never'. This is a type system issue, not a runtime issue.
-       *
-       * The insertData variable is correctly typed as ProcessingHistoryInsert above,
-       * which matches the database schema exactly. The 'as never' cast is safe because:
-       * 1. insertData is explicitly typed and validated against ProcessingHistoryInsert
-       * 2. All required fields are present (original_image_url, processed_image_url, etc.)
-       * 3. The types match the database schema defined in lib/supabase/types.ts
-       *
-       * This is a workaround for: https://github.com/supabase/supabase-js/issues/
-       * Alternative solutions would require upgrading Supabase packages or using RPC functions.
-       */
       const { data, error } = await supabase
         .from("processing_history")
-        .insert(insertData as never)
+        .insert(insertData)
         .select()
         .single();
 

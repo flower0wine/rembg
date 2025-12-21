@@ -2,8 +2,8 @@
 CREATE TABLE IF NOT EXISTS usage_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  fingerprint TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  fingerprint TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   CONSTRAINT user_or_fingerprint CHECK (
     (user_id IS NOT NULL) OR (fingerprint IS NOT NULL)
   )
