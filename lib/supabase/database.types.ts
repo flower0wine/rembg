@@ -196,7 +196,14 @@ export interface Database {
       [_ in never]: never
     };
     Functions: {
-      [_ in never]: never
+      increment_usage_count: {
+        Args: { p_max_limit: number; p_user_id: string };
+        Returns: {
+          max_usage_limit: number;
+          plan: Database["public"]["Enums"]["subscription_plan"];
+          usage_count: number;
+        }[];
+      };
     };
     Enums: {
       subscription_plan: "free" | "pro" | "enterprise";
