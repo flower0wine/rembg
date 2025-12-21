@@ -6,11 +6,13 @@
 
 import type { ImageItem, UploadError } from "./types";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useTheme } from "next-themes";
+import { Turnstile } from "next-turnstile";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
 import { useRemoveBackground } from "@/lib/hooks/use-remove-background";
-import { RembgError } from "@/lib/request/api/rembg";
 import { toError } from "@/lib/utils";
 import { FullscreenDropZone } from "./fullscreen-drop-zone";
 import { ProcessingPanel } from "./processing-panel";
@@ -34,12 +36,38 @@ export function RembgWorkspace() {
   const removeImage = useSetAtom(removeImageAtom);
   const updateImage = useSetAtom(updateImageAtom);
 
+  // Turnstile 状态管理
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const { theme, resolvedTheme } = useTheme();
+
+  const [showTurnstile, setShowTurnstile] = useState(true); // 初始显示（Managed 会自动处理）
+
+  const handleVerify = (newToken: string) => {
+    setTurnstileToken(newToken);
+    setShowTurnstile(false);
+  };
+
+  const handleError = () => {
+    setTurnstileToken(null);
+    toast.error("检测到可能存在自动化操作");
+  };
+
+  const handleExpire = () => {
+    setTurnstileToken(null);
+    setShowTurnstile(true);
+  };
+
   // 使用背景移除API
   const { mutateAsync: removeBackground } = useRemoveBackground();
 
   // 处理图片背景移除
   const processImage = async (id: string, file: File) => {
     try {
+      // 检查 Turnstile token
+      if (!turnstileToken) {
+        throw new Error("请完成机器人验证");
+      }
+
       // 更新状态为处理中
       updateImage({
         id,
@@ -49,8 +77,11 @@ export function RembgWorkspace() {
         }
       });
 
-      // 调用背景移除API
-      const resultBlob = await removeBackground({ imageFile: file });
+      // 调用背景移除API，传递 Turnstile token
+      const resultBlob = await removeBackground({
+        imageFile: file,
+        turnstileToken
+      });
 
       // 创建处理后的图片URL
       const processedUrl = URL.createObjectURL(resultBlob);
@@ -64,6 +95,9 @@ export function RembgWorkspace() {
           progress: 100,
         }
       });
+
+      // 重置 Turnstile token，要求重新验证
+      setTurnstileToken(null);
     }
     catch (error) {
       const err = toError(error);
@@ -80,6 +114,9 @@ export function RembgWorkspace() {
       console.error("背景移除失败:", err);
 
       toast.error(err.message);
+
+      // 重置 Turnstile token
+      setTurnstileToken(null);
     }
   };
 
@@ -129,6 +166,16 @@ export function RembgWorkspace() {
     await handleFilesSelected(files);
   };
 
+  // 获取 Turnstile 主题
+  const getTurnstileTheme = (): "light" | "dark" | "auto" => {
+    if (theme === "system") {
+      return resolvedTheme === "dark" ? "dark" : "light";
+    }
+    return theme === "dark" ? "dark" : "light";
+  };
+
+
+
   return (
     <FullscreenDropProvider
       value={{
@@ -154,6 +201,22 @@ export function RembgWorkspace() {
                   />
                 )}
           </div>
+
+          {/* Turnstile 验证组件 */}
+          {showTurnstile && (
+            <div className="flex justify-center">
+              <Turnstile
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onVerify={handleVerify}
+                onError={handleError}
+                onExpire={handleExpire}
+                sandbox={process.env.NODE_ENV === "development"}
+                theme={getTurnstileTheme()}
+                size="normal"
+                appearance="interaction-only"
+              />
+            </div>
+          )}
 
           {/* 缩略图列表 */}
           {images.length > 0 && (

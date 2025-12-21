@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { validateTurnstileToken } from "next-turnstile";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserSubscription } from "@/lib/supabase/subscription";
@@ -8,7 +9,41 @@ export async function POST(request: NextRequest) {
   let userId: string | null = null;
 
   try {
-    // 1. 验证用户身份
+    // 1. 验证 Turnstile token
+    const turnstileToken = request.headers.get("X-Turnstile-Token");
+
+    if (!turnstileToken) {
+      return NextResponse.json(
+        { error: "缺少机器人验证" },
+        { status: 400 }
+      );
+    }
+
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+
+    if (!turnstileSecret) {
+      console.error("未配置 TURNSTILE_SECRET_KEY");
+      return NextResponse.json(
+        { error: "服务配置错误" },
+        { status: 500 }
+      );
+    }
+
+    const result = await validateTurnstileToken({
+      token: turnstileToken,
+      secretKey: turnstileSecret,
+      sandbox: process.env.NODE_ENV === "development",
+      remoteip: request.headers.get("x-forwarded-for") || undefined,
+    });
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: "机器人验证失败，请重试" },
+        { status: 403 }
+      );
+    }
+
+    // 2. 验证用户身份
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -21,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     userId = user.id;
 
-    // 2. 获取或创建用户订阅
+    // 3. 获取或创建用户订阅
     const { data: subscription, error: subError } = await ensureUserSubscription(
       supabase,
       user.id
@@ -35,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. 检查订阅是否激活
+    // 4. 检查订阅是否激活
     if (!subscription.is_active) {
       return NextResponse.json(
         { error: "订阅已过期，请续费" },
@@ -43,7 +78,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. 预留使用额度（原子性操作，防止超额）
+    // 5. 预留使用额度（原子性操作，防止超额）
     const { data: reservation, error: reserveError } = await (supabase as any)
       .rpc("reserve_usage_quota", {
         p_user_id: user.id,
@@ -88,7 +123,7 @@ export async function POST(request: NextRequest) {
     // 保存预留ID，用于后续确认或释放
     reservationId = reservation[0].reservation_id;
 
-    // 5. 获取环境变量中的服务 URL
+    // 6. 获取环境变量中的服务 URL
     const webUrl = process.env.REMBG_SERVICE_URL;
 
     if (!webUrl) {
@@ -105,7 +140,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. 获取请求体中的图片数据
+    // 7. 获取请求体中的图片数据
     const imageData = await request.arrayBuffer();
 
     if (!imageData || imageData.byteLength === 0) {
@@ -122,7 +157,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. 检查文件大小限制
+    // 8. 检查文件大小限制
     const fileSizeMB = imageData.byteLength / (1024 * 1024);
     if (fileSizeMB > subscription.max_file_size_mb) {
       // 释放预留
@@ -143,7 +178,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 8. 调用云端服务
+    // 9. 调用云端服务
     const response = await fetch(webUrl, {
       method: "POST",
       headers: {
@@ -176,15 +211,15 @@ export async function POST(request: NextRequest) {
         });
       }
       return NextResponse.json(
-        { error: `服务错误：${response.status} ${response.statusText}` },
+        { error: "我们这边出了一点问题，请稍后再试" },
         { status: response.status }
       );
     }
 
-    // 9. 获取处理后的图片数据
+    // 10. 获取处理后的图片数据
     const processedImageData = await response.arrayBuffer();
 
-    // 10. 处理成功，确认预留并增加计数
+    // 11. 处理成功，确认预留并增加计数
     const { data: confirmed, error: confirmError } = await (supabase as any)
       .rpc("confirm_usage_reservation", {
         p_reservation_id: reservationId,
@@ -199,7 +234,7 @@ export async function POST(request: NextRequest) {
 
     const newUsageCount = confirmed?.[0]?.new_usage_count || subscription.usage_count + 1;
 
-    // 11. 返回处理后的图片，并在响应头中包含使用情况
+    // 12. 返回处理后的图片，并在响应头中包含使用情况
     return new NextResponse(processedImageData, {
       status: 200,
       headers: {

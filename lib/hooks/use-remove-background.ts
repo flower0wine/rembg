@@ -6,10 +6,12 @@ import { removeBackground, removeBackgroundFromUrl } from "../request/api/rembg"
 
 interface RemoveBackgroundParams {
   imageFile: File;
+  turnstileToken?: string;
 }
 
 interface RemoveBackgroundFromUrlParams {
   imageUrl: string;
+  turnstileToken?: string;
 }
 
 /**
@@ -17,8 +19,8 @@ interface RemoveBackgroundFromUrlParams {
  */
 export function useRemoveBackground() {
   return useMutation({
-    mutationFn: async ({ imageFile }: RemoveBackgroundParams) => {
-      return removeBackground(imageFile);
+    mutationFn: async ({ imageFile, turnstileToken }: RemoveBackgroundParams) => {
+      return removeBackground(imageFile, turnstileToken);
     },
   });
 }
@@ -28,8 +30,8 @@ export function useRemoveBackground() {
  */
 export function useRemoveBackgroundFromUrl() {
   return useMutation({
-    mutationFn: async ({ imageUrl }: RemoveBackgroundFromUrlParams) => {
-      return removeBackgroundFromUrl(imageUrl);
+    mutationFn: async ({ imageUrl, turnstileToken }: RemoveBackgroundFromUrlParams) => {
+      return removeBackgroundFromUrl(imageUrl, turnstileToken);
     },
   });
 }

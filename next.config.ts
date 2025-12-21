@@ -4,7 +4,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 const cspHeader = `
     default-src 'self';
     connect-src 'self' https://*.supabase.co https://www.google.com https://www.gstatic.com https://api.remove.bg;
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.google.com https://www.gstatic.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://challenges.cloudflare.com;
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https:;
     font-src 'self';
@@ -12,7 +12,7 @@ const cspHeader = `
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    frame-src https://www.google.com;
+    frame-src https://www.google.com https://challenges.cloudflare.com;
     upgrade-insecure-requests;`;
 
 const nextConfig: NextConfig = {
