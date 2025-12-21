@@ -43,7 +43,16 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      subscription,
+      subscription: {
+        userId: user.id,
+        email: user.email!,
+        plan: subscription.plan,
+        usageCount: subscription.usage_count,
+        maxUsageLimit: subscription.max_usage_limit,
+        maxFileSizeMb: subscription.max_file_size_mb,
+        maxBatchSize: subscription.max_batch_size,
+        hasApiAccess: subscription.has_api_access,
+      },
       token,
     });
   }

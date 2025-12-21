@@ -34,6 +34,11 @@ export async function POST(request: Request) {
     // Fetch plan limits from database (single source of truth)
     const limits = await getPlanLimits(plan as SubscriptionPlan);
 
+    // Calculate end date based on billing period
+    const endDate = billingPeriod === "annual"
+      ? dayjs().add(1, "year").toISOString()
+      : dayjs().add(1, "month").toISOString();
+
     const upsertData: TablesInsert<"user_subscriptions"> = {
       user_id: user.id,
       plan: plan as SubscriptionPlan,
@@ -41,7 +46,7 @@ export async function POST(request: Request) {
       ...limits,
       is_active: true,
       subscription_start_date: dayjs().toISOString(),
-      subscription_end_date: dayjs().add(30, "month").toISOString()
+      subscription_end_date: endDate
     };
 
     const { data: subscription, error: subError } = await supabase
@@ -82,7 +87,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      subscription: sub,
       token,
     });
   }
