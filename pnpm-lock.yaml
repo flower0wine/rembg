@@ -71,6 +71,9 @@ importers:
       framer-motion:
         specifier: ^12.23.26
         version: 12.23.26(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      import-in-the-middle:
+        specifier: ^2.0.1
+        version: 2.0.1
       jotai:
         specifier: ^2.16.0
         version: 2.16.0(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.1)
@@ -104,6 +107,9 @@ importers:
       react-use:
         specifier: ^17.6.0
         version: 17.6.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      require-in-the-middle:
+        specifier: ^8.0.1
+        version: 8.0.1
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
