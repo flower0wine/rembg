@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { FullscreenDropZone } from "@/components/features/rembg";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
-import { FullscreenDropZone } from "@/components/features/rembg";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
 
 export const metadata: Metadata = {

@@ -47,13 +47,13 @@ export async function POST(request: NextRequest) {
     const { data: reservation, error: reserveError } = await (supabase as any)
       .rpc("reserve_usage_quota", {
         p_user_id: user.id,
-        p_timeout_seconds: 300  // 5分钟超时
+        p_timeout_seconds: 300 // 5分钟超时
       });
 
     if (reserveError) {
       console.error("预留额度失败:", reserveError);
 
-      if (reserveError.message?.includes('quota_exceeded')) {
+      if (reserveError.message?.includes("quota_exceeded")) {
         return NextResponse.json(
           {
             error: "已达到使用额度上限",
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (reserveError.message?.includes('subscription_inactive')) {
+      if (reserveError.message?.includes("subscription_inactive")) {
         return NextResponse.json(
           { error: "订阅已过期，请续费" },
           { status: 403 }
@@ -222,7 +222,8 @@ export async function POST(request: NextRequest) {
           p_reservation_id: reservationId,
           p_user_id: userId
         });
-      } catch (releaseError) {
+      }
+      catch (releaseError) {
         console.error("释放预留失败:", releaseError);
       }
     }

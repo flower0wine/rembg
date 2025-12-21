@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
 import { useRemoveBackground } from "@/lib/hooks/use-remove-background";
+import { RembgError } from "@/lib/request/api/rembg";
 import { toError } from "@/lib/utils";
 import { FullscreenDropZone } from "./fullscreen-drop-zone";
 import { ProcessingPanel } from "./processing-panel";
@@ -63,23 +64,22 @@ export function RembgWorkspace() {
           progress: 100,
         }
       });
-
-      toast.success("背景移除成功");
     }
     catch (error) {
+      const err = toError(error);
+
       // 更新为错误状态
       updateImage({
         id,
         updates: {
           status: ImageStatus.Error,
-          error: toError(error)
+          error: err
         }
       });
 
-      console.error(toError(error));
+      console.error("背景移除失败:", err);
 
-
-      toast.error("背景移除失败");
+      toast.error(err.message);
     }
   };
 
