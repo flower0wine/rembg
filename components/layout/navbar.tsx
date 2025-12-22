@@ -6,10 +6,8 @@ import { ROUTES } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils/cn.util";
 
 const navItems = [
-  { href: ROUTES.HOME, label: "首页" },
-  { href: ROUTES.APP, label: "背景移除" },
+  { href: ROUTES.APP, label: "移除背景" },
   { href: ROUTES.PRICING, label: "定价" },
-  { href: ROUTES.HISTORY, label: "历史记录" },
 ];
 
 export function Navbar() {

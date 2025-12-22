@@ -1,10 +1,11 @@
 "use client";
 
 import { History, LogOut, User } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAuthContext } from "@/components/providers/auth-provider";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -52,11 +53,16 @@ export function UserMenu() {
     return email.substring(0, 2).toUpperCase();
   };
 
+  const avatarUrl = user.user_metadata?.avatar_url;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
+            {avatarUrl && (
+              <AvatarImage src={avatarUrl} alt="用户头像" />
+            )}
             <AvatarFallback>{getInitials(user.email || "U")}</AvatarFallback>
           </Avatar>
         </Button>
