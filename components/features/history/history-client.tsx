@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { HistoryEmpty } from "./history-empty";
 import { HistoryList } from "./history-list";
@@ -71,12 +72,12 @@ export function HistoryClient() {
     return (
       <div className="text-center py-12">
         <p className="text-destructive">{error}</p>
-        <button
+        <Button
           onClick={loadHistory}
-          className="mt-4 text-sm text-primary hover:underline"
+          className="mt-4"
         >
           重试
-        </button>
+        </Button>
       </div>
     );
   }
