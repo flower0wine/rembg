@@ -4,12 +4,13 @@ import type { SubscriptionPlan } from "@/lib/types";
 import type { PricingPlanData } from "@/lib/types/pricing";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PricingCard } from "@/components/features/pricing/pricing-card";
 import { PricingToggle } from "@/components/features/pricing/pricing-toggle";
 import { useSubscriptionStatus } from "@/lib/hooks/use-subscription-status";
 import { useUpgradeSubscription } from "@/lib/hooks/use-upgrade-subscription";
+import { createClient } from "@/lib/supabase/client";
 
 interface PricingSectionProps {
   plans: PricingPlanData[];
@@ -21,12 +22,24 @@ export function PricingSection({ plans }: PricingSectionProps) {
     "monthly",
   );
   const [loadingPlan, setLoadingPlan] = useState<SubscriptionPlan | null>(null);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
 
   // 分别调用两个 hook
   const { data } = useSubscriptionStatus();
   const upgradeMutation = useUpgradeSubscription();
 
   const subscription = data?.subscription;
+
+  // 获取当前登录用户的 ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id);
+    };
+
+    getCurrentUser();
+  }, []);
 
   const handlePlanSelect = (plan: SubscriptionPlan) => {
     // If user is not logged in, redirect to login
@@ -94,6 +107,7 @@ export function PricingSection({ plans }: PricingSectionProps) {
             isLoading={upgradeMutation.isPending}
             loadingPlan={loadingPlan}
             currentPlan={subscription?.plan}
+            userId={userId}
             index={index}
           />
         ))}

@@ -2,6 +2,7 @@
 
 import type { SubscriptionPlan } from "@/lib/types";
 import type { PricingPlanData } from "@/lib/types/pricing";
+import { CreemCheckout } from "@creem_io/nextjs";
 import { motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 import { FeatureList } from "./feature-list";
 
+const projectId = process.env.NEXT_PUBLIC_CREEM_PROJECT_ID!;
+
 export interface PricingCardProps {
   plan: PricingPlanData;
   billingPeriod: "monthly" | "annual";
@@ -23,6 +26,7 @@ export interface PricingCardProps {
   isLoading?: boolean;
   loadingPlan?: SubscriptionPlan | null;
   currentPlan?: string;
+  userId?: string;
   index?: number;
 }
 
@@ -33,6 +37,7 @@ export function PricingCard({
   isLoading = false,
   loadingPlan = null,
   currentPlan,
+  userId,
   index = 0,
 }: PricingCardProps) {
   // 使用转换后的前端数据（单位：美元）
@@ -132,23 +137,62 @@ export function PricingCard({
         </CardContent>
 
         <CardFooter>
-          <Button
-            className="w-full"
-            variant={plan.isFeatured ? "default" : "outline"}
-            onClick={() => onSelect(plan.plan)}
-            disabled={isLoading || isCurrentPlan}
-          >
-            {isThisCardLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                处理中...
-              </>
-            ) : isCurrentPlan ? (
-              "当前方案"
-            ) : (
-              ctaText
-            )}
-          </Button>
+          {plan.plan === "pro"
+            ? (
+                <CreemCheckout
+                  productId={projectId}
+                  successUrl="/subscription/checkout"
+                  referenceId={userId}
+                >
+                  <Button
+                    className="w-full"
+                    variant={plan.isFeatured ? "default" : "outline"}
+                    disabled={isLoading || isCurrentPlan || !userId}
+                  >
+                    {isThisCardLoading
+                      ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            处理中...
+                          </>
+                        )
+                      : isCurrentPlan
+                        ? (
+                            "当前方案"
+                          )
+                        : !userId
+                            ? (
+                                "请先登录"
+                              )
+                            : (
+                                ctaText
+                              )}
+                  </Button>
+                </CreemCheckout>
+              )
+            : (
+                <Button
+                  className="w-full"
+                  variant={plan.isFeatured ? "default" : "outline"}
+                  onClick={() => onSelect(plan.plan)}
+                  disabled={isLoading || isCurrentPlan}
+                >
+                  {isThisCardLoading
+                    ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          处理中...
+                        </>
+                      )
+                    : isCurrentPlan
+                      ? (
+                          "当前方案"
+                        )
+                      : (
+                          ctaText
+                        )}
+                </Button>
+              )}
         </CardFooter>
       </Card>
     </motion.div>
