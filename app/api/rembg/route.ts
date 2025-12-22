@@ -4,6 +4,41 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserSubscription } from "@/lib/supabase/subscription";
 
+// 处理历史记录接口
+interface ProcessingHistoryData {
+  userId: string;
+  originalFilename: string;
+  fileSize: number;
+  originalImageUrl: string;
+  processedImageUrl: string;
+}
+
+// 异步记录处理历史
+async function recordProcessingHistory(
+  supabase: any,
+  data: ProcessingHistoryData
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from("processing_history")
+      .insert({
+        user_id: data.userId,
+        original_filename: data.originalFilename,
+        file_size: data.fileSize,
+        original_image_url: data.originalImageUrl,
+        processed_image_url: data.processedImageUrl,
+      });
+
+    if (error) {
+      throw error;
+    }
+  }
+  catch (error) {
+    // 重新抛出错误，让调用方决定如何处理
+    throw new Error(`记录处理历史失败: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 export async function POST(request: NextRequest) {
   let reservationId: string | null = null;
   let userId: string | null = null;
@@ -129,7 +164,7 @@ export async function POST(request: NextRequest) {
     if (!webUrl) {
       // 释放预留
       if (reservationId) {
-        await (supabase as any).rpc("release_usage_reservation", {
+        await supabase.rpc("release_usage_reservation", {
           p_reservation_id: reservationId,
           p_user_id: user.id
         });
@@ -234,7 +269,24 @@ export async function POST(request: NextRequest) {
 
     const newUsageCount = confirmed?.[0]?.new_usage_count || subscription.usage_count + 1;
 
-    // 12. 返回处理后的图片，并在响应头中包含使用情况
+    // 12. 异步记录处理历史（不阻塞响应）
+    const originalFilename = request.headers.get("X-Original-Filename") || "image.jpg";
+
+    // 使用 Promise 异步记录，不等待结果
+    recordProcessingHistory(supabase, {
+      userId: user.id,
+      originalFilename,
+      fileSize: imageData.byteLength,
+      // 注意：这里我们暂时不存储实际的图片URL，因为我们直接返回图片数据
+      // 如果需要存储图片，需要先上传到 Supabase Storage
+      originalImageUrl: "", // 可以后续实现图片存储
+      processedImageUrl: "", // 可以后续实现图片存储
+    }).catch((error) => {
+      // 历史记录失败不影响主流程，只记录错误
+      console.error("记录处理历史失败:", error);
+    });
+
+    // 13. 返回处理后的图片，并在响应头中包含使用情况
     return new NextResponse(processedImageData, {
       status: 200,
       headers: {

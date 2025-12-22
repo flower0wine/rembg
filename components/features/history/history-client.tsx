@@ -1,168 +1,89 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { HistoryList } from "@/components/features/history/history-list";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  useDeleteAllHistory,
-  useDeleteHistory,
-  useHistory,
-} from "@/lib/hooks/use-history";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { HistoryEmpty } from "./history-empty";
+import { HistoryList } from "./history-list";
 
-const ITEMS_PER_PAGE = 10;
+export interface ProcessingHistoryItem {
+  id: string;
+  user_id: string;
+  original_image_url: string;
+  processed_image_url: string;
+  original_filename: string;
+  file_size: number;
+  created_at: string;
+}
 
 export function HistoryClient() {
-  const [page, setPage] = useState(0);
-  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
-  const offset = page * ITEMS_PER_PAGE;
+  const [history, setHistory] = useState<ProcessingHistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch history with pagination
-  const {
-    data: historyData,
-    isLoading,
-    error,
-    refetch,
-  } = useHistory({
-    limit: ITEMS_PER_PAGE,
-    offset,
-    orderBy: "created_at",
-    orderDirection: "desc",
-  });
+  useEffect(() => {
+    loadHistory();
+  }, []);
 
-  // Delete mutations
-  const deleteHistoryMutation = useDeleteHistory();
-  const deleteAllHistoryMutation = useDeleteAllHistory();
-
-  const items = historyData?.data || [];
-  const totalCount = historyData?.count || 0;
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
-  const hasNextPage = page < totalPages - 1;
-  const hasPrevPage = page > 0;
-
-  const handleDelete = async (id: string) => {
+  async function loadHistory() {
     try {
-      await deleteHistoryMutation.mutateAsync(id);
-      toast.success("记录已删除");
+      setLoading(true);
+      setError(null);
+
+      const supabase = createClient();
+
+      const { data, error: fetchError } = await supabase
+        .from("processing_history")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      setHistory(data || []);
     }
-    catch (error) {
-      toast.error("删除失败，请重试");
-      console.error("Delete error:", error);
+    catch (err) {
+      console.error("加载历史记录失败:", err);
+      setError("加载历史记录失败，请稍后重试");
     }
-  };
-
-  const handleDeleteAll = () => {
-    setDeleteAllOpen(true);
-  };
-
-  const confirmDeleteAll = async () => {
-    try {
-      await deleteAllHistoryMutation.mutateAsync();
-      toast.success("所有记录已删除");
-      setPage(0);
-      setDeleteAllOpen(false);
+    finally {
+      setLoading(false);
     }
-    catch (error) {
-      toast.error("删除失败，请重试");
-      console.error("Delete all error:", error);
-    }
-  };
+  }
 
-  const handlePrevPage = () => {
-    if (hasPrevPage) {
-      setPage(page - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
 
-  const handleNextPage = () => {
-    if (hasNextPage) {
-      setPage(page + 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
 
-  return (
-    <>
-      <HistoryList
-        items={items}
-        isLoading={isLoading}
-        error={error}
-        onDelete={handleDelete}
-        onDeleteAll={items.length > 0 ? handleDeleteAll : undefined}
-        onRetry={() => void refetch()}
-      />
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[...Array.from({ length: 3 })].map((_, i) => (
+          <div
+            key={i}
+            className="h-32 bg-muted animate-pulse rounded-lg"
+          />
+        ))}
+      </div>
+    );
+  }
 
-      {totalPages > 1 && (
-        <div className="mt-8 flex items-center justify-between border-t pt-6">
-          <div className="text-sm text-muted-foreground">
-            第
-            {" "}
-            {page + 1}
-            {" "}
-            页，共
-            {" "}
-            {totalPages}
-            {" "}
-            页
-          </div>
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-destructive">{error}</p>
+        <button
+          onClick={loadHistory}
+          className="mt-4 text-sm text-primary hover:underline"
+        >
+          重试
+        </button>
+      </div>
+    );
+  }
 
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrevPage}
-              disabled={!hasPrevPage || isLoading}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleNextPage}
-              disabled={!hasNextPage || isLoading}
-            >
-              下一页
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+  if (history.length === 0) {
+    return <HistoryEmpty />;
+  }
 
-      <AlertDialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除所有历史记录吗？此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              className={buttonVariants({ variant: "destructive" })}
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                void confirmDeleteAll();
-              }}
-            >
-              删除
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
+  return <HistoryList items={history} />;
 }

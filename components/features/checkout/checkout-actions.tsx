@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/lib/constants/routes";
 
 export function CheckoutActions() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export function CheckoutActions() {
       className="space-y-3"
     >
       <Button
-        onClick={() => handleNavigation("/app")}
+        onClick={async () => handleNavigation(ROUTES.APP)}
         className="w-full"
         size="lg"
         disabled={isNavigating}
@@ -33,7 +34,7 @@ export function CheckoutActions() {
       </Button>
 
       <Button
-        onClick={() => handleNavigation("/pricing")}
+        onClick={async () => handleNavigation("/pricing")}
         variant="outline"
         className="w-full"
         disabled={isNavigating}

@@ -137,6 +137,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      usage_reservations: {
+        Row: {
+          confirmed_at: string | null;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          metadata: Json | null;
+          released_at: string | null;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          confirmed_at?: string | null;
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          metadata?: Json | null;
+          released_at?: string | null;
+          status: string;
+          user_id: string;
+        };
+        Update: {
+          confirmed_at?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          metadata?: Json | null;
+          released_at?: string | null;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       user_subscriptions: {
         Row: {
           billing_period: string;
@@ -196,12 +229,56 @@ export interface Database {
       [_ in never]: never
     };
     Functions: {
+      check_and_reserve_quota: {
+        Args: { p_user_id: string };
+        Returns: {
+          can_proceed: boolean;
+          max_usage_limit: number;
+          plan: Database["public"]["Enums"]["subscription_plan"];
+          usage_count: number;
+        }[];
+      };
+      cleanup_expired_reservations: {
+        Args: never;
+        Returns: {
+          cleaned_count: number;
+        }[];
+      };
+      confirm_usage: {
+        Args: { p_user_id: string };
+        Returns: {
+          max_usage_limit: number;
+          usage_count: number;
+        }[];
+      };
+      confirm_usage_reservation: {
+        Args: { p_reservation_id: string; p_user_id: string };
+        Returns: {
+          new_usage_count: number;
+          success: boolean;
+        }[];
+      };
       increment_usage_count: {
         Args: { p_max_limit: number; p_user_id: string };
         Returns: {
           max_usage_limit: number;
           plan: Database["public"]["Enums"]["subscription_plan"];
           usage_count: number;
+        }[];
+      };
+      release_usage_reservation: {
+        Args: { p_reservation_id: string; p_user_id: string };
+        Returns: {
+          success: boolean;
+        }[];
+      };
+      reserve_usage_quota: {
+        Args: { p_timeout_seconds?: number; p_user_id: string };
+        Returns: {
+          current_usage: number;
+          max_limit: number;
+          plan: Database["public"]["Enums"]["subscription_plan"];
+          reservation_id: string;
         }[];
       };
     };

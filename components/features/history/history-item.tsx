@@ -1,169 +1,120 @@
 "use client";
 
-import type { ProcessingHistory } from "@/lib/types";
+import type { ProcessingHistoryItem } from "./history-client";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { motion } from "framer-motion";
-import { Calendar, Download, FileImage, Trash2 } from "lucide-react";
-import Image from "next/image";
+import { Calendar, Download, FileImage, HardDrive } from "lucide-react";
 import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import "dayjs/locale/zh-cn";
+
+// 配置 dayjs
+dayjs.extend(relativeTime);
+dayjs.locale("zh-cn");
 
 interface HistoryItemProps {
-  item: ProcessingHistory;
-  onDownload: (item: ProcessingHistory) => void;
-  onDelete: (id: string) => void;
-  className?: string;
+  item: ProcessingHistoryItem;
 }
 
-export function HistoryItem({
-  item,
-  onDownload,
-  onDelete,
-  className,
-}: HistoryItemProps) {
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  const handleDeleteClick = () => {
-    setDeleteOpen(true);
-  };
-
-  const confirmDelete = () => {
-    onDelete(item.id);
-    setDeleteOpen(false);
-  };
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("zh-CN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  };
+export function HistoryItem({ item }: HistoryItemProps) {
+  const [showDownloadMessage, setShowDownloadMessage] = useState(false);
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024)
-      return `${bytes} B`;
-    if (bytes < 1024 * 1024)
-      return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes === 0)
+      return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
   };
 
+  const formatDate = (dateString: string) => {
+    return dayjs(dateString).fromNow();
+  };
+
+  const handleDownload = () => {
+    // 由于当前实现中图片URL为空，这里暂时显示提示
+    // 后续可以实现实际的下载功能
+    setShowDownloadMessage(true);
+    setTimeout(() => setShowDownloadMessage(false), 3000);
+  };
+
+
+
   return (
-    <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3 }}
-        className={className}
-      >
-        <Card className={cn("overflow-hidden hover:shadow-md transition-shadow")}>
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              {/* Image Previews */}
-              <div className="flex gap-2 shrink-0">
-                {/* Original Image */}
-                <div className="relative h-20 w-20 overflow-hidden rounded-md border bg-muted">
-                  <Image
-                    src={item.original_image_url}
-                    alt="Original"
-                    fill
-                    className="object-cover"
-                    sizes="80px"
-                  />
-                </div>
-
-                {/* Processed Image */}
-                <div className="relative h-20 w-20 overflow-hidden rounded-md border checkered-background">
-                  <Image
-                    src={item.processed_image_url}
-                    alt="Processed"
-                    fill
-                    className="object-contain"
-                    sizes="80px"
-                  />
-                </div>
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 },
+      }}
+      whileHover={{ scale: 1.01 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card className="p-6 hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 space-y-3">
+            {/* 文件名和图标 */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FileImage className="h-5 w-5 text-primary" />
               </div>
-
-              {/* Details */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start gap-2">
-                  <FileImage className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate" title={item.original_filename}>
-                      {item.original_filename}
-                    </p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(item.created_at)}
-                      </span>
-                      <span>{formatFileSize(item.file_size)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onDownload(item)}
-                  title="下载处理后的图片"
-                >
-                  <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline">下载</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDeleteClick}
-                  title="删除记录"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+              <div>
+                <h3 className="font-medium text-lg">{item.original_filename}</h3>
+                <p className="text-sm text-muted-foreground">
+                  背景移除处理
+                </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除 "
-              {item.original_filename}
-              " 的处理记录吗？
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              className={buttonVariants({ variant: "destructive" })}
-              onClick={confirmDelete}
+            {/* 详细信息 */}
+            <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <HardDrive className="h-4 w-4" />
+                <span>{formatFileSize(item.file_size)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span>{formatDate(item.created_at)}</span>
+              </div>
+            </div>
+
+            {/* 处理状态 */}
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-green-600 font-medium">
+                处理完成
+              </span>
+            </div>
+
+            {/* 下载提示消息 */}
+            {showDownloadMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="text-sm text-blue-600 bg-blue-50 p-2 rounded"
+              >
+                下载功能将在后续版本中实现
+              </motion.div>
+            )}
+          </div>
+
+          {/* 操作按钮 */}
+          <div className="flex items-center gap-2 ml-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="gap-2"
             >
-              删除
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+              <Download className="h-4 w-4" />
+              下载
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </motion.div>
   );
 }
