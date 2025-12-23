@@ -17,29 +17,38 @@ export interface Database {
       processing_history: {
         Row: {
           created_at: string;
-          file_size: number;
+          error_message: string | null;
           id: string;
           original_filename: string;
-          original_image_url: string;
-          processed_image_url: string;
+          original_image_url: string | null;
+          processed_image_url: string | null;
+          processing_status: Database["public"]["Enums"]["processing_status_enum"];
+          processing_time_ms: number | null;
+          updated_at: string;
           user_id: string;
         };
         Insert: {
           created_at?: string;
-          file_size: number;
+          error_message?: string | null;
           id?: string;
           original_filename: string;
-          original_image_url: string;
-          processed_image_url: string;
+          original_image_url?: string | null;
+          processed_image_url?: string | null;
+          processing_status?: Database["public"]["Enums"]["processing_status_enum"];
+          processing_time_ms?: number | null;
+          updated_at?: string;
           user_id: string;
         };
         Update: {
           created_at?: string;
-          file_size?: number;
+          error_message?: string | null;
           id?: string;
           original_filename?: string;
-          original_image_url?: string;
-          processed_image_url?: string;
+          original_image_url?: string | null;
+          processed_image_url?: string | null;
+          processing_status?: Database["public"]["Enums"]["processing_status_enum"];
+          processing_time_ms?: number | null;
+          updated_at?: string;
           user_id?: string;
         };
         Relationships: [];
@@ -283,6 +292,7 @@ export interface Database {
       };
     };
     Enums: {
+      processing_status_enum: "processing" | "completed" | "failed";
       subscription_plan: "free" | "pro" | "enterprise";
     };
     CompositeTypes: {
@@ -411,6 +421,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      processing_status_enum: ["processing", "completed", "failed"],
       subscription_plan: ["free", "pro", "enterprise"],
     },
   },

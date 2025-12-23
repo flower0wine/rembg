@@ -1,55 +1,37 @@
 import type { NextRequest } from "next/server";
+import dayjs from "dayjs";
 import { validateTurnstileToken } from "next-turnstile";
 import { NextResponse } from "next/server";
+
+import { v4 as uuidv4 } from "uuid";
+import { uploadImageToR2 } from "@/lib/request/api/storage";
+import { createProcessingHistory, updateProcessingHistory } from "@/lib/supabase/history";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserSubscription } from "@/lib/supabase/subscription";
-
-// 处理历史记录接口
-interface ProcessingHistoryData {
-  userId: string;
-  originalFilename: string;
-  fileSize: number;
-  originalImageUrl: string;
-  processedImageUrl: string;
-}
-
-// 异步记录处理历史
-async function recordProcessingHistory(
-  supabase: any,
-  data: ProcessingHistoryData
-): Promise<void> {
-  try {
-    const { error } = await supabase
-      .from("processing_history")
-      .insert({
-        user_id: data.userId,
-        original_filename: data.originalFilename,
-        file_size: data.fileSize,
-        original_image_url: data.originalImageUrl,
-        processed_image_url: data.processedImageUrl,
-      });
-
-    if (error) {
-      throw error;
-    }
-  }
-  catch (error) {
-    // 重新抛出错误，让调用方决定如何处理
-    throw new Error(`记录处理历史失败: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
+import { toError } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   let reservationId: string | null = null;
   let userId: string | null = null;
+  let historyId: string | null = null;
+  const startTime = dayjs();
 
   try {
-    // 1. 验证 Turnstile token
+    // 验证 Turnstile token
     const turnstileToken = request.headers.get("X-Turnstile-Token");
 
     if (!turnstileToken) {
       return NextResponse.json(
         { error: "缺少机器人验证" },
+        { status: 400 }
+      );
+    }
+
+    const originalFilename = request.headers.get("X-Original-Filename");
+
+    if (!originalFilename) {
+      return NextResponse.json(
+        { error: "请提供文件名" },
         { status: 400 }
       );
     }
@@ -78,7 +60,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. 验证用户身份
+    // 验证用户身份
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -91,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     userId = user.id;
 
-    // 3. 获取或创建用户订阅
+    // 获取或创建用户订阅
     const { data: subscription, error: subError } = await ensureUserSubscription(
       supabase,
       user.id
@@ -105,7 +87,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. 检查订阅是否激活
+    // 检查订阅是否激活
     if (!subscription.is_active) {
       return NextResponse.json(
         { error: "订阅已过期，请续费" },
@@ -113,8 +95,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. 预留使用额度（原子性操作，防止超额）
-    const { data: reservation, error: reserveError } = await (supabase as any)
+    // 预留使用额度（原子性操作，防止超额）
+    const { data: reservation, error: reserveError } = await supabase
       .rpc("reserve_usage_quota", {
         p_user_id: user.id,
         p_timeout_seconds: 300 // 5分钟超时
@@ -158,7 +140,23 @@ export async function POST(request: NextRequest) {
     // 保存预留ID，用于后续确认或释放
     reservationId = reservation[0].reservation_id;
 
-    // 6. 获取环境变量中的服务 URL
+    // 获取请求体中的图片数据
+    const imageData = await request.arrayBuffer();
+
+    // 创建处理历史记录
+    try {
+      historyId = await createProcessingHistory({
+        user_id: user.id,
+        original_filename: originalFilename,
+        processing_status: "processing",
+      });
+    }
+    catch (historyError) {
+      console.error("创建处理历史失败:", historyError);
+      // 历史记录失败不影响主流程
+    }
+
+    // 获取环境变量中的服务 URL
     const webUrl = process.env.REMBG_SERVICE_URL;
 
     if (!webUrl) {
@@ -175,33 +173,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. 获取请求体中的图片数据
-    const imageData = await request.arrayBuffer();
-
     if (!imageData || imageData.byteLength === 0) {
-      // 释放预留
-      if (reservationId) {
-        await (supabase as any).rpc("release_usage_reservation", {
-          p_reservation_id: reservationId,
-          p_user_id: user.id
-        });
+      // 更新处理历史为失败
+      if (historyId) {
+        await updateProcessingHistory(historyId, {
+          processing_status: "failed",
+          error_message: "未提供图片数据",
+          processing_time_ms: dayjs().diff(startTime),
+        }).catch(console.error);
       }
+
+      // 释放预留
+      await supabase.rpc("release_usage_reservation", {
+        p_reservation_id: reservationId,
+        p_user_id: user.id
+      });
       return NextResponse.json(
         { error: "未提供图片数据" },
         { status: 400 }
       );
     }
 
-    // 8. 检查文件大小限制
+    // 检查文件大小限制
     const fileSizeMB = imageData.byteLength / (1024 * 1024);
     if (fileSizeMB > subscription.max_file_size_mb) {
-      // 释放预留
-      if (reservationId) {
-        await (supabase as any).rpc("release_usage_reservation", {
-          p_reservation_id: reservationId,
-          p_user_id: user.id
-        });
+      // 更新处理历史为失败
+      if (historyId) {
+        await updateProcessingHistory(historyId, {
+          processing_status: "failed",
+          error_message: `文件大小超出限制: ${fileSizeMB.toFixed(2)}MB > ${subscription.max_file_size_mb}MB`,
+          processing_time_ms: dayjs().diff(startTime),
+        }).catch(console.error);
       }
+
+      // 释放预留
+      await supabase.rpc("release_usage_reservation", {
+        p_reservation_id: reservationId,
+        p_user_id: user.id
+      });
       return NextResponse.json(
         {
           error: `文件大小超出限制`,
@@ -213,7 +222,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 9. 调用云端服务
+    // 用云端服务处理图片
     const response = await fetch(webUrl, {
       method: "POST",
       headers: {
@@ -224,13 +233,20 @@ export async function POST(request: NextRequest) {
 
     // 处理响应
     if (response.status === 400) {
-      // 释放预留
-      if (reservationId) {
-        await (supabase as any).rpc("release_usage_reservation", {
-          p_reservation_id: reservationId,
-          p_user_id: user.id
-        });
+      // 更新处理历史为失败
+      if (historyId) {
+        await updateProcessingHistory(historyId, {
+          processing_status: "failed",
+          error_message: "图片未提供或格式不正确",
+          processing_time_ms: dayjs().diff(startTime),
+        }).catch(console.error);
       }
+
+      // 释放预留
+      await supabase.rpc("release_usage_reservation", {
+        p_reservation_id: reservationId,
+        p_user_id: user.id
+      });
       return NextResponse.json(
         { error: "图片未提供或格式不正确" },
         { status: 400 }
@@ -238,24 +254,57 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response.ok) {
-      // 释放预留
-      if (reservationId) {
-        await (supabase as any).rpc("release_usage_reservation", {
-          p_reservation_id: reservationId,
-          p_user_id: user.id
-        });
+      // 更新处理历史为失败
+      if (historyId) {
+        await updateProcessingHistory(historyId, {
+          processing_status: "failed",
+          error_message: `远程服务错误: HTTP ${response.status}`,
+          processing_time_ms: dayjs().diff(startTime),
+        }).catch(console.error);
       }
+
+      // 释放预留
+      await supabase.rpc("release_usage_reservation", {
+        p_reservation_id: reservationId,
+        p_user_id: user.id
+      });
       return NextResponse.json(
         { error: "我们这边出了一点问题，请稍后再试" },
         { status: response.status }
       );
     }
 
-    // 10. 获取处理后的图片数据
+    // 获取处理后的图片数据
     const processedImageData = await response.arrayBuffer();
 
-    // 11. 处理成功，确认预留并增加计数
-    const { data: confirmed, error: confirmError } = await (supabase as any)
+    // 上传原始图片和处理后的图片到R2存储
+    let originalImageUrl = "";
+    let processedImageUrl = "";
+
+    try {
+      // 生成唯一文件名
+      const timestamp = Date.now();
+      const originalUuid = uuidv4();
+      const processedUuid = uuidv4();
+      const originalPath = `images/${user.id}/original/${timestamp}-${originalUuid}.jpg`;
+      const processedPath = `images/${user.id}/processed/${timestamp}-${processedUuid}.png`;
+
+      // 并行上传两张图片
+      const [originalUrl, processedUrl] = await Promise.all([
+        uploadImageToR2(imageData, originalPath, "image/jpeg"),
+        uploadImageToR2(processedImageData, processedPath, "image/png")
+      ]);
+
+      originalImageUrl = originalUrl;
+      processedImageUrl = processedUrl;
+    }
+    catch (uploadError) {
+      console.error("图片上传失败:", uploadError);
+      // 上传失败不影响主流程，继续处理
+    }
+
+    // 处理成功，确认预留并增加计数
+    const { data: confirmed, error: confirmError } = await supabase
       .rpc("confirm_usage_reservation", {
         p_reservation_id: reservationId,
         p_user_id: user.id
@@ -269,24 +318,19 @@ export async function POST(request: NextRequest) {
 
     const newUsageCount = confirmed?.[0]?.new_usage_count || subscription.usage_count + 1;
 
-    // 12. 异步记录处理历史（不阻塞响应）
-    const originalFilename = request.headers.get("X-Original-Filename") || "image.jpg";
+    // 更新处理历史为成功
+    if (historyId) {
+      await updateProcessingHistory(historyId, {
+        original_image_url: originalImageUrl,
+        processed_image_url: processedImageUrl,
+        processing_status: "completed",
+        processing_time_ms: dayjs().diff(startTime),
+      }).catch((error) => {
+        console.error("更新处理历史失败:", error);
+      });
+    }
 
-    // 使用 Promise 异步记录，不等待结果
-    recordProcessingHistory(supabase, {
-      userId: user.id,
-      originalFilename,
-      fileSize: imageData.byteLength,
-      // 注意：这里我们暂时不存储实际的图片URL，因为我们直接返回图片数据
-      // 如果需要存储图片，需要先上传到 Supabase Storage
-      originalImageUrl: "", // 可以后续实现图片存储
-      processedImageUrl: "", // 可以后续实现图片存储
-    }).catch((error) => {
-      // 历史记录失败不影响主流程，只记录错误
-      console.error("记录处理历史失败:", error);
-    });
-
-    // 13. 返回处理后的图片，并在响应头中包含使用情况
+    // 14. 返回处理后的图片，并在响应头中包含使用情况
     return new NextResponse(processedImageData, {
       status: 200,
       headers: {
@@ -301,11 +345,27 @@ export async function POST(request: NextRequest) {
   catch (error) {
     console.error("背景移除服务错误:", error);
 
+    const err = toError(error);
+
+    // 更新处理历史为失败
+    if (historyId && userId) {
+      try {
+        await updateProcessingHistory(historyId, {
+          processing_status: "failed",
+          error_message: err.message,
+          processing_time_ms: dayjs().diff(startTime),
+        });
+      }
+      catch (historyError) {
+        console.error("更新处理历史失败:", historyError);
+      }
+    }
+
     // 如果有预留ID，尝试释放
     if (reservationId && userId) {
       try {
         const supabase = await createClient();
-        await (supabase as any).rpc("release_usage_reservation", {
+        await supabase.rpc("release_usage_reservation", {
           p_reservation_id: reservationId,
           p_user_id: userId
         });
