@@ -78,13 +78,13 @@ export function RembgWorkspace() {
       });
 
       // 调用背景移除API，传递 Turnstile token
-      const resultBlob = await removeBackground({
+      const result = await removeBackground({
         imageFile: file,
         turnstileToken
       });
 
       // 创建处理后的图片URL
-      const processedUrl = URL.createObjectURL(resultBlob);
+      const processedUrl = result.url;
 
       // 更新为完成状态
       updateImage({
@@ -95,9 +95,6 @@ export function RembgWorkspace() {
           progress: 100,
         }
       });
-
-      // 重置 Turnstile token，要求重新验证
-      setTurnstileToken(null);
     }
     catch (error) {
       const err = toError(error);
@@ -114,9 +111,6 @@ export function RembgWorkspace() {
       console.error("背景移除失败:", err);
 
       toast.error(err.message);
-
-      // 重置 Turnstile token
-      setTurnstileToken(null);
     }
   };
 
@@ -173,8 +167,6 @@ export function RembgWorkspace() {
     }
     return theme === "dark" ? "dark" : "light";
   };
-
-
 
   return (
     <FullscreenDropProvider

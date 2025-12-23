@@ -2,13 +2,20 @@ import type { NextRequest } from "next/server";
 import dayjs from "dayjs";
 import { validateTurnstileToken } from "next-turnstile";
 import { NextResponse } from "next/server";
-
 import { v4 as uuidv4 } from "uuid";
 import { uploadImageToR2 } from "@/lib/request/api/storage";
 import { createProcessingHistory, updateProcessingHistory } from "@/lib/supabase/history";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserSubscription } from "@/lib/supabase/subscription";
 import { toError } from "@/lib/utils";
+import { getFileExtension } from "@/lib/utils/file";
+
+const turnstileSecret = process.env.TURNSTILE_SECRET_KEY!;
+const rembgServiceUrl = process.env.REMBG_SERVICE_URL!;
+
+if (!rembgServiceUrl) {
+  throw new Error("REMBG_SERVICE_URL 环境变量未配置");
+}
 
 export async function POST(request: NextRequest) {
   let reservationId: string | null = null;
@@ -16,27 +23,53 @@ export async function POST(request: NextRequest) {
   let historyId: string | null = null;
   const startTime = dayjs();
 
+  const originalFilename = request.headers.get("X-Original-Filename");
+  const contentType = request.headers.get("Content-Type");
+
+  const fileSize = request.headers.get("X-Original-File-Size");
+
+  if (!fileSize || isNaN(Number(fileSize))) {
+    return NextResponse.json(
+      { error: "请提供文件大小" },
+      { status: 400 }
+    );
+  }
+
+  const originalFileSize = Number(fileSize);
+
+  if (!originalFilename || !contentType) {
+    return NextResponse.json(
+      { error: "请提供文件名" },
+      { status: 400 }
+    );
+  }
+
+  const fileExtension = getFileExtension(originalFilename);
+
+  if (!["jpg", "jpeg", "png", "webp"].includes(fileExtension)) {
+    return NextResponse.json(
+      { error: "不支持的文件类型" },
+      { status: 400 }
+    );
+  }
+
+  if (!request.body) {
+    return NextResponse.json(
+      { error: "未提供图片数据" },
+      { status: 400 }
+    );
+  }
+
   try {
     // 验证 Turnstile token
     const turnstileToken = request.headers.get("X-Turnstile-Token");
 
     if (!turnstileToken) {
       return NextResponse.json(
-        { error: "缺少机器人验证" },
+        { error: "验证失败" },
         { status: 400 }
       );
     }
-
-    const originalFilename = request.headers.get("X-Original-Filename");
-
-    if (!originalFilename) {
-      return NextResponse.json(
-        { error: "请提供文件名" },
-        { status: 400 }
-      );
-    }
-
-    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
 
     if (!turnstileSecret) {
       console.error("未配置 TURNSTILE_SECRET_KEY");
@@ -46,16 +79,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userIp = request.headers.get("x-forwarded-for") || undefined;
+
     const result = await validateTurnstileToken({
       token: turnstileToken,
       secretKey: turnstileSecret,
       sandbox: process.env.NODE_ENV === "development",
-      remoteip: request.headers.get("x-forwarded-for") || undefined,
+      remoteip: userIp,
     });
 
     if (!result.success) {
       return NextResponse.json(
-        { error: "机器人验证失败，请重试" },
+        { error: "验证失败，请重试" },
         { status: 403 }
       );
     }
@@ -95,6 +130,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 检查文件大小限制
+    const fileSizeMB = originalFileSize / (1024 * 1024);
+    if (fileSizeMB > subscription.max_file_size_mb) {
+      return NextResponse.json(
+        {
+          error: `文件大小超出限制`,
+          file_size_mb: fileSizeMB.toFixed(2),
+          max_file_size_mb: subscription.max_file_size_mb,
+          plan: subscription.plan
+        },
+        { status: 413 }
+      );
+    }
+
     // 预留使用额度（原子性操作，防止超额）
     const { data: reservation, error: reserveError } = await supabase
       .rpc("reserve_usage_quota", {
@@ -103,7 +152,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (reserveError) {
-      console.error("预留额度失败:", reserveError);
+      console.error("[rembg] 预留额度失败:", reserveError);
 
       if (reserveError.message?.includes("quota_exceeded")) {
         return NextResponse.json(
@@ -140,9 +189,6 @@ export async function POST(request: NextRequest) {
     // 保存预留ID，用于后续确认或释放
     reservationId = reservation[0].reservation_id;
 
-    // 获取请求体中的图片数据
-    const imageData = await request.arrayBuffer();
-
     // 创建处理历史记录
     try {
       historyId = await createProcessingHistory({
@@ -156,104 +202,20 @@ export async function POST(request: NextRequest) {
       // 历史记录失败不影响主流程
     }
 
-    // 获取环境变量中的服务 URL
-    const webUrl = process.env.REMBG_SERVICE_URL;
-
-    if (!webUrl) {
-      // 释放预留
-      if (reservationId) {
-        await supabase.rpc("release_usage_reservation", {
-          p_reservation_id: reservationId,
-          p_user_id: user.id
-        });
-      }
-      return NextResponse.json(
-        { error: "服务配置错误：未设置 REMBG_SERVICE_URL" },
-        { status: 500 }
-      );
-    }
-
-    if (!imageData || imageData.byteLength === 0) {
-      // 更新处理历史为失败
-      if (historyId) {
-        await updateProcessingHistory(historyId, {
-          processing_status: "failed",
-          error_message: "未提供图片数据",
-          processing_time_ms: dayjs().diff(startTime),
-        }).catch(console.error);
-      }
-
-      // 释放预留
-      await supabase.rpc("release_usage_reservation", {
-        p_reservation_id: reservationId,
-        p_user_id: user.id
-      });
-      return NextResponse.json(
-        { error: "未提供图片数据" },
-        { status: 400 }
-      );
-    }
-
-    // 检查文件大小限制
-    const fileSizeMB = imageData.byteLength / (1024 * 1024);
-    if (fileSizeMB > subscription.max_file_size_mb) {
-      // 更新处理历史为失败
-      if (historyId) {
-        await updateProcessingHistory(historyId, {
-          processing_status: "failed",
-          error_message: `文件大小超出限制: ${fileSizeMB.toFixed(2)}MB > ${subscription.max_file_size_mb}MB`,
-          processing_time_ms: dayjs().diff(startTime),
-        }).catch(console.error);
-      }
-
-      // 释放预留
-      await supabase.rpc("release_usage_reservation", {
-        p_reservation_id: reservationId,
-        p_user_id: user.id
-      });
-      return NextResponse.json(
-        {
-          error: `文件大小超出限制`,
-          file_size_mb: fileSizeMB.toFixed(2),
-          max_file_size_mb: subscription.max_file_size_mb,
-          plan: subscription.plan
-        },
-        { status: 413 }
-      );
-    }
+    const [processStream, uploadStream] = request.body.tee();
 
     // 用云端服务处理图片
-    const response = await fetch(webUrl, {
+    const response = await fetch(rembgServiceUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "image/jpeg",
+        "Content-Type": contentType,
       },
-      body: imageData,
+      body: processStream,
+      // @ts-expect-error 该属性是真实存在的！！！
+      duplex: "half",
     });
 
-    // 处理响应
-    if (response.status === 400) {
-      // 更新处理历史为失败
-      if (historyId) {
-        await updateProcessingHistory(historyId, {
-          processing_status: "failed",
-          error_message: "图片未提供或格式不正确",
-          processing_time_ms: dayjs().diff(startTime),
-        }).catch(console.error);
-      }
-
-      // 释放预留
-      await supabase.rpc("release_usage_reservation", {
-        p_reservation_id: reservationId,
-        p_user_id: user.id
-      });
-      return NextResponse.json(
-        { error: "图片未提供或格式不正确" },
-        { status: 400 }
-      );
-    }
-
-    if (!response.ok) {
+    if (response.status !== 200 || !response.body) {
       // 更新处理历史为失败
       if (historyId) {
         await updateProcessingHistory(historyId, {
@@ -274,9 +236,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取处理后的图片数据
-    const processedImageData = await response.arrayBuffer();
-
     // 上传原始图片和处理后的图片到R2存储
     let originalImageUrl = "";
     let processedImageUrl = "";
@@ -286,20 +245,21 @@ export async function POST(request: NextRequest) {
       const timestamp = Date.now();
       const originalUuid = uuidv4();
       const processedUuid = uuidv4();
-      const originalPath = `images/${user.id}/original/${timestamp}-${originalUuid}.jpg`;
+      const originalPath = `images/${user.id}/original/${timestamp}-${originalUuid}.${fileExtension}`;
       const processedPath = `images/${user.id}/processed/${timestamp}-${processedUuid}.png`;
+
 
       // 并行上传两张图片
       const [originalUrl, processedUrl] = await Promise.all([
-        uploadImageToR2(imageData, originalPath, "image/jpeg"),
-        uploadImageToR2(processedImageData, processedPath, "image/png")
+        uploadImageToR2(uploadStream, originalPath, contentType),
+        uploadImageToR2(response.body, processedPath, "image/png")
       ]);
 
       originalImageUrl = originalUrl;
       processedImageUrl = processedUrl;
     }
     catch (uploadError) {
-      console.error("图片上传失败:", uploadError);
+      console.error("[rembg] 图片上传失败:", uploadError);
       // 上传失败不影响主流程，继续处理
     }
 
@@ -311,7 +271,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (confirmError) {
-      console.error("确认使用失败:", confirmError);
+      console.error("[rembg] 确认使用失败:", confirmError);
       // 即使确认失败，也返回处理后的图片（用户已经消耗了资源）
       // 但记录错误以便后续修复
     }
@@ -326,24 +286,22 @@ export async function POST(request: NextRequest) {
         processing_status: "completed",
         processing_time_ms: dayjs().diff(startTime),
       }).catch((error) => {
-        console.error("更新处理历史失败:", error);
+        console.error("[rembg] 更新处理历史失败:", error);
       });
     }
 
     // 14. 返回处理后的图片，并在响应头中包含使用情况
-    return new NextResponse(processedImageData, {
-      status: 200,
-      headers: {
-        "Content-Type": "image/png",
-        "Cache-Control": "no-store",
-        "X-Usage-Count": String(newUsageCount),
-        "X-Usage-Limit": String(subscription.max_usage_limit),
-        "X-Usage-Remaining": String(subscription.max_usage_limit - newUsageCount),
+    return NextResponse.json({
+      url: processedImageUrl,
+      usage: {
+        count: newUsageCount,
+        limit: subscription.max_usage_limit,
+        remaining: subscription.max_usage_limit - newUsageCount,
       },
     });
   }
   catch (error) {
-    console.error("背景移除服务错误:", error);
+    console.error("[rembg] 背景移除服务错误:", error);
 
     const err = toError(error);
 

@@ -1,3 +1,4 @@
+import type { RembgResponse } from "@/lib/types/rembg";
 import api from "../axios";
 
 
@@ -7,32 +8,15 @@ import api from "../axios";
  * @param turnstileToken Turnstile 验证 token
  * @returns 处理后的图片 Blob
  */
-export async function removeBackground(imageFile: File, turnstileToken?: string): Promise<Blob> {
+export async function removeBackground(imageFile: File, turnstileToken?: string): Promise<RembgResponse> {
   const response = await api.post("/rembg", imageFile, {
     headers: {
       "Content-Type": imageFile.type,
+      "X-Original-Filename": imageFile.name,
+      "X-Original-File-Size": imageFile.size,
       ...(turnstileToken && { "X-Turnstile-Token": turnstileToken }),
     },
-    responseType: "blob",
   });
 
   return response.data;
-}
-
-/**
- * 移除图片背景（通过 URL）
- * @param imageUrl 图片 URL
- * @param turnstileToken Turnstile 验证 token
- * @returns 处理后的图片 Blob
- */
-export async function removeBackgroundFromUrl(imageUrl: string, turnstileToken?: string): Promise<Blob> {
-  // 先获取图片
-  const imageResponse = await fetch(imageUrl);
-
-  const imageBlob = await imageResponse.blob();
-
-  // 转换为 File 对象
-  const imageFile = new File([imageBlob], "image.jpg", { type: imageBlob.type });
-
-  return removeBackground(imageFile, turnstileToken);
 }

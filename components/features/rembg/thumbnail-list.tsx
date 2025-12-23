@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { download } from "@/lib/utils/download.util";
 import { ImageFileInput, useImageFileInput } from "./image-file-input";
 
 interface ThumbnailListProps {
@@ -46,6 +47,12 @@ export function ThumbnailList({
 
   if (images.length === 0)
     return null;
+
+  const handleDownload = (image: ImageItem) => {
+    if (image.processedImageUrl) {
+      download(image.processedImageUrl, image.originImageFile.name);
+    }
+  };
 
   return (
     <motion.div
@@ -165,66 +172,61 @@ export function ThumbnailList({
                 </motion.button>
 
                 {/* 更多按钮 */}
-                <motion.div
-                  className={cn(
-                    "absolute top-1 right-1",
-                    "opacity-0 group-hover:opacity-100 transition-opacity"
-                  )}
-                  initial={{ scale: 0.8 }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        onClick={e => e.stopPropagation()}
-                        className={cn(
-                          "size-6 rounded-full bg-background border border-border text-foreground",
-                          "flex items-center justify-center shadow-md",
-                          "hover:bg-accent transition-colors"
-                        )}
-                      >
-                        <MoreVertical className="size-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent side="top" align="center" className="w-40">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const link = image.processedImageUrl || image.originImageUrl;
-                          const a = document.createElement("a");
-                          a.href = link;
-                          a.download = image.originImageFile.name.replace(/\.[^/.]+$/, "-processed.png");
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                        }}
-                      >
-                        <Download className="size-4 mr-2" />
-                        下载
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const link = image.processedImageUrl || image.originImageUrl;
-                          navigator.clipboard.writeText(link);
-                        }}
-                      >
-                        <Link2 className="size-4 mr-2" />
-                        复制链接
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemove(image.id);
-                        }}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="size-4 mr-2" />
-                        删除
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </motion.div>
+                {image.processedImageUrl && (
+                  <motion.div
+                    className={cn(
+                      "absolute top-1 right-1",
+                      "opacity-0 group-hover:opacity-100 transition-opacity"
+                    )}
+                    initial={{ scale: 0.8 }}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={e => e.stopPropagation()}
+                          className={cn(
+                            "size-6 rounded-full bg-background border border-border text-foreground",
+                            "flex items-center justify-center shadow-md",
+                            "hover:bg-accent transition-colors"
+                          )}
+                        >
+                          <MoreVertical className="size-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="top" align="center" className="w-40">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            handleDownload(image);
+                          }}
+                        >
+                          <Download className="size-4 mr-2" />
+                          下载
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const link = image.processedImageUrl || image.originImageUrl;
+                            navigator.clipboard.writeText(link);
+                          }}
+                        >
+                          <Link2 className="size-4 mr-2" />
+                          复制链接
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove(image.id);
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="size-4 mr-2" />
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </motion.div>
+                )}
               </motion.div>
             ))}
           </AnimatePresence>

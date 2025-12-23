@@ -15,9 +15,6 @@ export * from "./components";
 // Error types
 export * from "./error";
 
-// Processing history types
-export * from "./history";
-
 // Landing page types
 export * from "./landing";
 
