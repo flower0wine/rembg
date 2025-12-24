@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { AuthGuard } from "@/components/features/auth/auth-guard";
-import { HistoryClient } from "@/components/features/history/history-client";
+import { HistoryList } from "@/components/features/history/history-client";
 import { ListSkeleton } from "@/components/ui/page-loading";
 
 export default function HistoryPage() {
@@ -15,7 +15,7 @@ export default function HistoryPage() {
         </div>
 
         <Suspense fallback={<ListSkeleton count={5} />}>
-          <HistoryClient />
+          <HistoryList />
         </Suspense>
       </div>
     </AuthGuard>

@@ -1,24 +1,34 @@
 "use client";
 
 import type { Tables } from "@/lib/supabase/database.types";
+import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-
+import Masonry from "react-masonry-css";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { HistoryEmpty } from "./history-empty";
-import { HistoryList } from "./history-list";
+import { HistoryItem } from "./history-item";
+import "./masonry.css";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
-export function HistoryClient() {
-  const [history, setHistory] = useState<Tables<"processing_history">[]>([]);
+export function HistoryList() {
+  const [items, setItems] = useState<Tables<"processing_history">[]>([]);
   const [loading, setLoading] = useState(true);
-  const [initialError, setInitialError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [noMore, setNoMore] = useState(false);
   const loadingRef = useRef<HTMLDivElement>(null);
   const isFetchingRef = useRef(false);
+
+  // 响应式断点配置
+  const breakpointColumns = {
+    default: 4,
+    1536: 4, // xl: 4列
+    1280: 3, // lg: 3列
+    1024: 2, // md: 2列
+    640: 1, // sm: 1列
+  };
 
   async function fetchHistoryPage(offset: number) {
     const supabase = createClient();
@@ -44,9 +54,9 @@ export function HistoryClient() {
     try {
       isFetchingRef.current = true;
       setLoadingMore(true);
-      setLoadMoreError(null); // 清除之前的加载更多错误
+      setLoadMoreError(null);
 
-      const offset = history.length;
+      const offset = items.length;
       const newItems = await fetchHistoryPage(offset);
 
       if (newItems.length < PAGE_SIZE) {
@@ -54,7 +64,7 @@ export function HistoryClient() {
       }
 
       if (newItems.length > 0) {
-        setHistory(prev => [...prev, ...newItems]);
+        setItems(prev => [...prev, ...newItems]);
       }
     }
     catch (err) {
@@ -67,44 +77,39 @@ export function HistoryClient() {
     }
   };
 
-  // 监听 window/html 滚动，接近底部时加载更多
+  // 使用 Intersection Observer 监听底部触发器
   useEffect(() => {
-    const handleScroll = () => {
-      if (loading || loadingMore || noMore)
-        return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && !loadingMore && !noMore) {
+          void loadMore();
+        }
+      },
+      { rootMargin: "400px" } // 提前 400px 触发
+    );
 
-      const doc = document.documentElement;
-      const scrollTop = doc.scrollTop;
-      const clientHeight = doc.clientHeight;
-      const scrollHeight = doc.scrollHeight;
-
-      const distanceToBottom = scrollHeight - (scrollTop + clientHeight);
-
-      if (distanceToBottom < 400) {
-        void loadMore();
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    if (loadingRef.current) {
+      observer.observe(loadingRef.current);
+    }
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      observer.disconnect();
     };
-  }, [loading, loadingMore, noMore, loadMore]);
+  }, [loading, loadingMore, noMore]);
 
   // 初始加载
   useEffect(() => {
     async function initialLoad() {
       try {
         setLoading(true);
-        setInitialError(null);
+        setLoadMoreError(null);
 
-        const items = await fetchHistoryPage(0);
-        setHistory(items);
+        const initialItems = await fetchHistoryPage(0);
+        setItems(initialItems);
       }
       catch (err) {
         console.error("加载历史记录失败:", err);
-        setInitialError("加载历史记录失败，请稍后重试");
+        setLoadMoreError("加载历史记录失败，请稍后重试");
       }
       finally {
         setLoading(false);
@@ -114,68 +119,65 @@ export function HistoryClient() {
     initialLoad();
   }, []);
 
-  async function retryLoad() {
-    setHistory([]);
-    setInitialError(null);
-    setLoadMoreError(null);
-
-    try {
-      setLoading(true);
-      const items = await fetchHistoryPage(history.length);
-      setHistory(items);
-      setNoMore(false); // 重置无更多数据状态
-    }
-    catch (err) {
-      console.error("重新加载历史记录失败:", err);
-      setInitialError("加载历史记录失败，请稍后重试");
-    }
-    finally {
-      setLoading(false);
-    }
-  }
+  const skeleton = (count: number) => {
+    return [...Array.from({ length: count })].map((_, i) => {
+      const randomHeight = Math.floor(Math.random() * 201) + 200; // 200-400px
+      return (
+        <div
+          key={`skeleton-${i}`}
+          className="bg-muted animate-pulse rounded-lg"
+          style={{ height: `${randomHeight}px` }}
+        />
+      );
+    });
+  };
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        {[...Array.from({ length: 3 })].map((_, i) => (
-          <div
-            key={i}
-            className="h-32 bg-muted animate-pulse rounded-lg"
-          />
-        ))}
-      </div>
+      <Masonry
+        breakpointCols={breakpointColumns}
+        className="masonry-grid"
+        columnClassName="masonry-grid-column"
+      >
+        {skeleton(8)}
+      </Masonry>
     );
   }
 
-  // 只有在初始加载失败且没有任何历史记录时才显示错误页面
-  if (initialError && history.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-destructive">{initialError}</p>
-        <Button
-          onClick={retryLoad}
-          className="mt-4"
-        >
-          重试
-        </Button>
-      </div>
-    );
-  }
-
-  if (history.length === 0 && !initialError) {
+  if (items.length === 0) {
     return <HistoryEmpty />;
   }
 
   return (
     <div>
-      <HistoryList items={history} />
+      <Masonry
+        breakpointCols={breakpointColumns}
+        className="masonry-grid"
+        columnClassName="masonry-grid-column"
+      >
+        {items.map((item, index) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              delay: index * 0.05,
+              duration: 0.3,
+            }}
+          >
+            <HistoryItem item={item} />
+          </motion.div>
+        ))}
+
+        {loadingMore && skeleton(14)}
+      </Masonry>
 
       {/* 无限滚动触发器和加载状态 */}
       <div ref={loadingRef} className="py-8">
         {/* 加载更多错误提示 */}
         {loadMoreError && (
           <div className="text-center mb-4">
-            <p className="text-destructive text-sm mb-2">{loadMoreError}</p>
+            <p className="text-destructive text-sm mb-2">抱歉！我们这边遇到了一点问题</p>
             <Button
               onClick={() => {
                 setLoadMoreError(null);
@@ -184,43 +186,16 @@ export function HistoryClient() {
               variant="outline"
               size="sm"
             >
-              重试加载更多
+              点击重试
             </Button>
           </div>
         )}
 
-        {/* 加载更多的骨架屏 */}
-        {loadingMore && !loadMoreError && (
-          <div className="flex justify-center">
-            <div className="space-y-4 w-full max-w-4xl">
-              {[...Array.from({ length: 2 })].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-32 bg-muted animate-pulse rounded-lg"
-                />
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* 没有更多数据提示 */}
-        {noMore && history.length > 0 && !loadMoreError && (
-          <div className="text-center text-muted-foreground">
+        {noMore && items.length > 0 && !loadMoreError && (
+          <div className="text-center text-muted-foreground py-8">
             没有更多历史记录了
-          </div>
-        )}
-
-        {/* 初始加载错误但已有部分数据时的提示 */}
-        {initialError && history.length > 0 && (
-          <div className="text-center">
-            <p className="text-destructive text-sm mb-2">数据加载失败</p>
-            <Button
-              onClick={retryLoad}
-              variant="outline"
-              size="sm"
-            >
-              重试
-            </Button>
           </div>
         )}
       </div>
