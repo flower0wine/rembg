@@ -105,6 +105,7 @@ export function ThumbnailList({
                     fill
                     sizes="80px"
                     className="object-cover hover:scale-105 duration-300 transition-all"
+                    unoptimized
                   />
 
                   {/* 状态指示器 */}

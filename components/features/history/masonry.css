@@ -1,0 +1,39 @@
+/* 瀑布流布局样式 */
+.masonry-grid {
+  display: flex;
+  margin-left: -16px;
+  width: auto;
+}
+
+.masonry-grid-column {
+  padding-left: 16px;
+  background-clip: padding-box;
+}
+
+/* 响应式间距调整 */
+@media (max-width: 640px) {
+  .masonry-grid {
+    margin-left: -8px;
+  }
+  
+  .masonry-grid-column {
+    padding-left: 8px;
+  }
+}
+
+/* 确保卡片在瀑布流中正确显示 */
+.masonry-grid-column > div {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .masonry-grid-column > div {
+    margin-bottom: 8px;
+  }
+}
+
+/* 优化动画性能 */
+.masonry-grid-column > div {
+  will-change: transform;
+  backface-visibility: hidden;
+}

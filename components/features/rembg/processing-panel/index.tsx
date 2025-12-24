@@ -5,12 +5,11 @@
  */
 
 import type { ImageItem } from "../types";
+import { motion } from "framer-motion";
+import { ImageViewer } from "@/components/ui/image-viewer";
 import { cn } from "@/lib/utils";
-import { BackgroundEffects } from "./background-effects";
-import { CheckeredBackground } from "./checkered-background";
 import { CompletionAnimation } from "./completion-animation";
 import { ErrorDisplay } from "./error-display";
-import { ImageDisplay } from "./image-display";
 import { ProcessingAnimation } from "./processing-animation";
 import { ProgressBar } from "./progress-bar";
 
@@ -31,18 +30,15 @@ export function ProcessingPanel({ image, className }: ProcessingPanelProps) {
         className
       )}
     >
-      {/* 棋盘格底片背景 - 仅在完成时显示 */}
-      {isCompleted && image.processedImageUrl && (
-        <CheckeredBackground imageUrl={image.processedImageUrl} />
-      )}
-
-      {/* 前景图片 */}
-      <ImageDisplay
-        processedImageUrl={image.processedImageUrl}
-        alt={image.originImageFile.name}
-        isProcessing={isProcessing}
-        originalImageUrl={image.originImageUrl}
+      <ImageViewer
+        className={cn(isProcessing && "opacity-40 blur-sm")}
+        imageOne={image.processedImageUrl}
+        imageTwo={image.originImageUrl}
+        imageOneAlt={`${image.originImageFile.name}-original`}
+        imageTwoAlt={`${image.originImageFile.name}-processed`}
+        showCheckeredBackground={isCompleted && !!image.processedImageUrl}
       />
+
 
       {/* 处理中动效 */}
       {isProcessing && (
