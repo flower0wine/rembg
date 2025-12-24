@@ -100,7 +100,7 @@ export function ThumbnailList({
                   )}
 
                   <Image
-                    src={image.processedImageUrl || image.originImageUrl}
+                    src={image.originImageUrl}
                     alt={image.originImageFile.name}
                     fill
                     sizes="80px"
