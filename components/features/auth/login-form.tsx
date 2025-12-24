@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -134,7 +135,14 @@ export function LoginForm() {
             variant="outline"
             disabled={isLoading}
             onClick={async () => handleOAuthSignIn("google")}
+            className="flex items-center gap-2"
           >
+            <Image
+              src="/google.svg"
+              alt="Google"
+              width={16}
+              height={16}
+            />
             Google
           </Button>
           <Button
@@ -142,15 +150,21 @@ export function LoginForm() {
             variant="outline"
             disabled={isLoading}
             onClick={async () => handleOAuthSignIn("github")}
+            className="flex items-center gap-2"
           >
+            <Image
+              src="/github.svg"
+              alt="GitHub"
+              width={20}
+              height={20}
+            />
             GitHub
           </Button>
         </div>
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          还没有账户？
-          {" "}
+          <span>还没有账户？</span>
           <a href={ROUTES.REGISTER} className="text-primary hover:underline">
             注册
           </a>

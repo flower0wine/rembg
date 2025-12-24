@@ -1,6 +1,6 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
+import type { Provider, User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -140,7 +140,7 @@ export function useAuth() {
   }, [supabase, handleAuthAction]);
 
   // Sign in with OAuth provider
-  const signInWithOAuth = useCallback(async (provider: "google" | "github") => {
+  const signInWithOAuth = useCallback(async (provider: Provider) => {
     return handleAuthAction(async () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,

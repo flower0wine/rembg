@@ -10,7 +10,7 @@ export function PricingToggle({
   savingsPercentage = 20,
 }: PricingToggleProps) {
   return (
-    <motion.div 
+    <motion.div
       className="flex flex-col items-center gap-3"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -24,7 +24,7 @@ export function PricingToggle({
       </Tabs>
       <AnimatePresence mode="wait">
         {value === "annual" && (
-          <motion.p 
+          <motion.p
             className="text-sm text-primary font-medium"
             initial={{ opacity: 0, scale: 0.8, y: -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -9,11 +9,14 @@ import { HistoryList } from "./history-list";
 export interface ProcessingHistoryItem {
   id: string;
   user_id: string;
-  original_image_url: string;
-  processed_image_url: string;
+  original_image_url: string | null;
+  processed_image_url: string | null;
   original_filename: string;
-  file_size: number;
+  processing_status: "processing" | "completed" | "failed";
+  error_message: string | null;
+  processing_time_ms: number | null;
   created_at: string;
+  updated_at: string;
 }
 
 export function HistoryClient() {

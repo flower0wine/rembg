@@ -189,10 +189,28 @@ export async function POST(request: NextRequest) {
     // 保存预留ID，用于后续确认或释放
     reservationId = reservation[0].reservation_id;
 
+    const [processStream, uploadStream] = request.body.tee();
+
+    // 上传未处理的图片到R2存储
+    let originalImageUrl = "";
+
+    try {
+      const originalUuid = uuidv4();
+      const originalPath = `images/${user.id}/original/${originalUuid}.${fileExtension}`;
+
+      // 上传处理后的图片
+      originalImageUrl = await uploadImageToR2(uploadStream, originalPath, "image/png");
+    }
+    catch (uploadError) {
+      console.error("[rembg] 图片上传失败:", uploadError);
+      // 上传失败不影响主流程，继续处理
+    }
+
     // 创建处理历史记录
     try {
       historyId = await createProcessingHistory({
         user_id: user.id,
+        original_image_url: originalImageUrl,
         original_filename: originalFilename,
         processing_status: "processing",
       });
@@ -201,8 +219,6 @@ export async function POST(request: NextRequest) {
       console.error("创建处理历史失败:", historyError);
       // 历史记录失败不影响主流程
     }
-
-    const [processStream, uploadStream] = request.body.tee();
 
     // 用云端服务处理图片
     const response = await fetch(rembgServiceUrl, {
@@ -236,27 +252,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 上传原始图片和处理后的图片到R2存储
-    let originalImageUrl = "";
+    // 上传处理后的图片到R2存储
     let processedImageUrl = "";
 
     try {
-      // 生成唯一文件名
-      const timestamp = Date.now();
-      const originalUuid = uuidv4();
       const processedUuid = uuidv4();
-      const originalPath = `images/${user.id}/original/${timestamp}-${originalUuid}.${fileExtension}`;
-      const processedPath = `images/${user.id}/processed/${timestamp}-${processedUuid}.png`;
+      const processedPath = `images/${user.id}/processed/${processedUuid}.png`;
 
-
-      // 并行上传两张图片
-      const [originalUrl, processedUrl] = await Promise.all([
-        uploadImageToR2(uploadStream, originalPath, contentType),
-        uploadImageToR2(response.body, processedPath, "image/png")
-      ]);
-
-      originalImageUrl = originalUrl;
-      processedImageUrl = processedUrl;
+      // 上传处理后的图片
+      processedImageUrl = await uploadImageToR2(response.body, processedPath, "image/png");
     }
     catch (uploadError) {
       console.error("[rembg] 图片上传失败:", uploadError);

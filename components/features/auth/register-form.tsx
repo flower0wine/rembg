@@ -1,12 +1,14 @@
 "use client";
 
+import type { Provider } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
+import { z } from "zod";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,7 +65,7 @@ export function RegisterForm() {
     }
   };
 
-  const handleOAuthSignIn = async (provider: "google" | "github") => {
+  const handleOAuthSignIn = async (provider: Provider) => {
     setIsLoading(true);
 
     const { error } = await signInWithOAuth(provider);
@@ -150,7 +152,14 @@ export function RegisterForm() {
             variant="outline"
             disabled={isLoading}
             onClick={async () => handleOAuthSignIn("google")}
+            className="flex items-center gap-2"
           >
+            <Image
+              src="/google.svg"
+              alt="Google"
+              width={16}
+              height={16}
+            />
             Google
           </Button>
           <Button
@@ -158,15 +167,21 @@ export function RegisterForm() {
             variant="outline"
             disabled={isLoading}
             onClick={async () => handleOAuthSignIn("github")}
+            className="flex items-center gap-2"
           >
+            <Image
+              src="/github.svg"
+              alt="GitHub"
+              width={20}
+              height={20}
+            />
             GitHub
           </Button>
         </div>
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
-          已有账户？
-          {" "}
+          <span>已有账户？</span>
           <a href={ROUTES.LOGIN} className="text-primary hover:underline">
             登录
           </a>

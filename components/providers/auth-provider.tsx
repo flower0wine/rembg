@@ -1,6 +1,6 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
+import type { Provider, User } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import { useAuth } from "@/lib/hooks/use-auth";
@@ -11,7 +11,7 @@ interface AuthContextType {
   error: Error | null;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signUp: (email: string, password: string) => Promise<{ data: any; error: any }>;
-  signInWithOAuth: (provider: "google" | "github") => Promise<{ data: any; error: any }>;
+  signInWithOAuth: (provider: Provider) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<{ error: any }>;
 }
 
