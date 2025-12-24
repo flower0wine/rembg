@@ -13,7 +13,8 @@ const PAGE_SIZE = 5;
 export function HistoryClient() {
   const [history, setHistory] = useState<Tables<"processing_history">[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [initialError, setInitialError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [noMore, setNoMore] = useState(false);
   const loadingRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,7 @@ export function HistoryClient() {
     try {
       isFetchingRef.current = true;
       setLoadingMore(true);
+      setLoadMoreError(null); // 清除之前的加载更多错误
 
       const offset = history.length;
       const newItems = await fetchHistoryPage(offset);
@@ -57,7 +59,7 @@ export function HistoryClient() {
     }
     catch (err) {
       console.error("加载更多历史记录失败:", err);
-      setError("加载历史记录失败，请稍后重试");
+      setLoadMoreError("加载更多历史记录失败，请稍后重试");
     }
     finally {
       setLoadingMore(false);
@@ -95,14 +97,14 @@ export function HistoryClient() {
     async function initialLoad() {
       try {
         setLoading(true);
-        setError(null);
+        setInitialError(null);
 
         const items = await fetchHistoryPage(0);
         setHistory(items);
       }
       catch (err) {
         console.error("加载历史记录失败:", err);
-        setError("加载历史记录失败，请稍后重试");
+        setInitialError("加载历史记录失败，请稍后重试");
       }
       finally {
         setLoading(false);
@@ -114,16 +116,18 @@ export function HistoryClient() {
 
   async function retryLoad() {
     setHistory([]);
-    setError(null);
+    setInitialError(null);
+    setLoadMoreError(null);
 
     try {
       setLoading(true);
-      const items = await fetchHistoryPage(0);
+      const items = await fetchHistoryPage(history.length);
       setHistory(items);
+      setNoMore(false); // 重置无更多数据状态
     }
     catch (err) {
       console.error("重新加载历史记录失败:", err);
-      setError("加载历史记录失败，请稍后重试");
+      setInitialError("加载历史记录失败，请稍后重试");
     }
     finally {
       setLoading(false);
@@ -143,10 +147,11 @@ export function HistoryClient() {
     );
   }
 
-  if (error) {
+  // 只有在初始加载失败且没有任何历史记录时才显示错误页面
+  if (initialError && history.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-destructive">{error}</p>
+        <p className="text-destructive">{initialError}</p>
         <Button
           onClick={retryLoad}
           className="mt-4"
@@ -157,7 +162,7 @@ export function HistoryClient() {
     );
   }
 
-  if (history.length === 0) {
+  if (history.length === 0 && !initialError) {
     return <HistoryEmpty />;
   }
 
@@ -167,7 +172,25 @@ export function HistoryClient() {
 
       {/* 无限滚动触发器和加载状态 */}
       <div ref={loadingRef} className="py-8">
-        {!noMore && (
+        {/* 加载更多错误提示 */}
+        {loadMoreError && (
+          <div className="text-center mb-4">
+            <p className="text-destructive text-sm mb-2">{loadMoreError}</p>
+            <Button
+              onClick={() => {
+                setLoadMoreError(null);
+                void loadMore();
+              }}
+              variant="outline"
+              size="sm"
+            >
+              重试加载更多
+            </Button>
+          </div>
+        )}
+
+        {/* 加载更多的骨架屏 */}
+        {loadingMore && !loadMoreError && (
           <div className="flex justify-center">
             <div className="space-y-4 w-full max-w-4xl">
               {[...Array.from({ length: 2 })].map((_, i) => (
@@ -180,9 +203,24 @@ export function HistoryClient() {
           </div>
         )}
 
-        {noMore && history.length > 0 && (
+        {/* 没有更多数据提示 */}
+        {noMore && history.length > 0 && !loadMoreError && (
           <div className="text-center text-muted-foreground">
             没有更多历史记录了
+          </div>
+        )}
+
+        {/* 初始加载错误但已有部分数据时的提示 */}
+        {initialError && history.length > 0 && (
+          <div className="text-center">
+            <p className="text-destructive text-sm mb-2">数据加载失败</p>
+            <Button
+              onClick={retryLoad}
+              variant="outline"
+              size="sm"
+            >
+              重试
+            </Button>
           </div>
         )}
       </div>

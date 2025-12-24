@@ -1,9 +1,9 @@
 "use client";
 
-import type { ProcessingHistoryItem } from "./history-client";
+import type { Tables } from "@/lib/supabase/database.types";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { Calendar, CheckCircle, Clock, Download, Loader2 } from "lucide-react";
+import { Calendar, Clock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageViewer } from "@/components/ui/image-viewer";
@@ -17,7 +17,7 @@ dayjs.extend(relativeTime);
 dayjs.locale("zh-cn");
 
 interface HistoryItemProps {
-  item: ProcessingHistoryItem;
+  item: Tables<"processing_history">;
 }
 
 export function HistoryItem({ item }: HistoryItemProps) {
