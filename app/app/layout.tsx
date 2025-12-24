@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { FullscreenDropZone } from "@/components/features/rembg";
-import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
 
@@ -22,9 +21,10 @@ export default function AppLayout({
   return (
     <FullscreenDropProvider>
       <FullscreenDropZone>
-        <Header />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
+        <div className="h-screen flex flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 flex flex-col overflow-auto">{children}</main>
+        </div>
       </FullscreenDropZone>
     </FullscreenDropProvider>
   );

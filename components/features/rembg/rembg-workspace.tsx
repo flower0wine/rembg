@@ -5,10 +5,11 @@
  */
 
 import type { ImageItem, UploadError } from "./types";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useTheme } from "next-themes";
 import { Turnstile } from "next-turnstile";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
@@ -27,6 +28,8 @@ import {
 import { ThumbnailList } from "./thumbnail-list";
 import { ImageStatus } from "./types";
 import { UploadPanel } from "./upload-panel";
+
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!;
 
 export function RembgWorkspace() {
   const images = useAtomValue(imagesAtom);
@@ -179,9 +182,9 @@ export function RembgWorkspace() {
         onFilesSelected={handleFilesSelected}
         onError={handleUploadError}
       >
-        <div className="space-y-6 w-full">
+        <div className="w-full">
           {/* 主面板区域 */}
-          <div className="w-full">
+          <div className="w-full ">
             {selectedImage
               ? (
                   <ProcessingPanel image={selectedImage} />
@@ -195,20 +198,32 @@ export function RembgWorkspace() {
           </div>
 
           {/* Turnstile 验证组件 */}
-          {showTurnstile && (
-            <div className="flex justify-center">
-              <Turnstile
-                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                onVerify={handleVerify}
-                onError={handleError}
-                onExpire={handleExpire}
-                sandbox={process.env.NODE_ENV === "development"}
-                theme={getTurnstileTheme()}
-                size="normal"
-                appearance="interaction-only"
-              />
-            </div>
-          )}
+          <div className="relative h-0 pointer-events-none">
+            <AnimatePresence>
+              {showTurnstile && (
+                <motion.div
+                  className="absolute left-1/2 -translate-x-1/2 pointer-events-auto"
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                >
+                  <div className="flex justify-center">
+                    <Turnstile
+                      siteKey={turnstileSiteKey}
+                      onVerify={handleVerify}
+                      onError={handleError}
+                      onExpire={handleExpire}
+                      sandbox={process.env.NODE_ENV === "development"}
+                      theme={getTurnstileTheme()}
+                      size="normal"
+                      appearance="interaction-only"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* 缩略图列表 */}
           {images.length > 0 && (

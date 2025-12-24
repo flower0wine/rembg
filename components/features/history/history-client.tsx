@@ -139,7 +139,7 @@ export function HistoryList() {
         className="masonry-grid"
         columnClassName="masonry-grid-column"
       >
-        {skeleton(8)}
+        {skeleton(16)}
       </Masonry>
     );
   }
@@ -169,7 +169,7 @@ export function HistoryList() {
           </motion.div>
         ))}
 
-        {loadingMore && skeleton(14)}
+        {loadingMore && skeleton(8)}
       </Masonry>
 
       {/* 无限滚动触发器和加载状态 */}

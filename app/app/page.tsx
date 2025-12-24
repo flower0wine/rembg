@@ -12,10 +12,12 @@ import { PageLoading } from "@/components/ui/page-loading";
 export default function AppPage() {
   return (
     <AuthGuard>
-      <div className="container mx-auto px-4 py-8 flex flex-col items-center max-w-[800px]">
-        <Suspense fallback={<PageLoading message="正在加载" />}>
-          <RembgWorkspace />
-        </Suspense>
+      <div className="flex-1 flex flex-col">
+        <div className="container flex-1 mx-auto px-4 py-8 flex flex-col items-center justify-center max-w-[800px]">
+          <Suspense fallback={<PageLoading message="正在加载" />}>
+            <RembgWorkspace />
+          </Suspense>
+        </div>
       </div>
     </AuthGuard>
   );
