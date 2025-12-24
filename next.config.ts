@@ -3,8 +3,8 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const cspHeader = `
     default-src 'self';
-    connect-src 'self' https://image.flowerwine.dpdns.org https://*.supabase.co https://www.google.com https://www.gstatic.com;
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://challenges.cloudflare.com;
+    connect-src 'self' https://image.flowerwine.dpdns.org https://*.supabase.co https://www.google.com https://www.gstatic.com https://static.cloudflareinsights.com https://cloudflareinsights.com;
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://challenges.cloudflare.com https://static.cloudflareinsights.com;
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https: https://image.flowerwine.dpdns.org;
     font-src 'self';
