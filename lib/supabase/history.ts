@@ -42,8 +42,6 @@ export async function updateProcessingHistory(
     if (error) {
       throw error;
     }
-
-    console.log("更新历史记录成功", updateData);
   }
   catch (error) {
     const err = toError(error);

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { download } from "@/lib/utils/download.util";
+import { getFileName } from "@/lib/utils/file";
 import { ImageFileInput, useImageFileInput } from "./image-file-input";
 
 interface ThumbnailListProps {
@@ -50,7 +51,7 @@ export function ThumbnailList({
 
   const handleDownload = (image: ImageItem) => {
     if (image.processedImageUrl) {
-      download(image.processedImageUrl, image.originImageFile.name);
+      download(image.processedImageUrl, `${getFileName(image.originImageFile.name)}.png`);
     }
   };
 
