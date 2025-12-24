@@ -51,6 +51,13 @@ CREATE POLICY "Users can insert own processing history"
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+-- Policy: Users can update their own processing history
+CREATE POLICY "Users can update own processing history"
+  ON processing_history
+  FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
 -- Policy: Users can delete their own processing history
 CREATE POLICY "Users can delete own processing history"
   ON processing_history
