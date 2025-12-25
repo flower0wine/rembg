@@ -34,7 +34,10 @@ export function PricingSection({ plans }: PricingSectionProps) {
   useEffect(() => {
     const getCurrentUser = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data } = await supabase.auth.getClaims();
+
+      const user = data?.claims;
+
       setUserId(user?.id);
     };
 

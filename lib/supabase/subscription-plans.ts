@@ -1,6 +1,7 @@
 import type { SubscriptionPlan } from "../types";
 import type { Tables } from "./database.types";
 import { createClient } from "./server";
+import "server-only";
 
 /**
  * Get all visible subscription plans (for pricing page)

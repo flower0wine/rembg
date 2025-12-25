@@ -19,7 +19,9 @@ export async function POST(request: Request) {
 
     // Get authenticated user from Supabase
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data, error: authError } = await supabase.auth.getClaims();
+
+    const user = data?.claims;
 
     if (authError || !user) {
       return NextResponse.json(
@@ -28,13 +30,15 @@ export async function POST(request: Request) {
       );
     }
 
+    const userId = user.sub;
+
     // If token is valid and user matches, just verify user still exists
-    if (payload && payload.userId === user.id) {
+    if (payload && payload.userId === userId) {
       // Fetch fresh subscription data
       const { data: subscription, error: subError } = await supabase
         .from("user_subscriptions")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .single();
 
       if (subError || !subscription) {
@@ -48,7 +52,7 @@ export async function POST(request: Request) {
 
       // Generate new token
       const newToken = generateToken({
-        userId: user.id,
+        userId,
         email: user.email!,
         plan: sub.plan,
         usageCount: sub.usage_count,

@@ -97,7 +97,9 @@ export async function POST(request: NextRequest) {
 
     // 验证用户身份
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data, error: authError } = await supabase.auth.getClaims();
+
+    const user = data?.claims;
 
     if (authError || !user) {
       return NextResponse.json(
@@ -106,12 +108,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    userId = user.id;
+    userId = user.sub;
 
     // 获取或创建用户订阅
     const { data: subscription, error: subError } = await ensureUserSubscription(
       supabase,
-      user.id
+      userId
     );
 
     if (subError || !subscription) {
@@ -147,7 +149,7 @@ export async function POST(request: NextRequest) {
     // 预留使用额度（原子性操作，防止超额）
     const { data: reservation, error: reserveError } = await supabase
       .rpc("reserve_usage_quota", {
-        p_user_id: user.id,
+        p_user_id: userId,
         p_timeout_seconds: 300 // 5分钟超时
       });
 
@@ -196,7 +198,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const originalUuid = uuidv4();
-      const originalPath = `images/${user.id}/original/${originalUuid}.${fileExtension}`;
+      const originalPath = `images/${userId}/original/${originalUuid}.${fileExtension}`;
 
       // 上传处理后的图片
       originalImageUrl = await uploadImageToR2(uploadStream, originalPath, "image/png");
@@ -209,7 +211,7 @@ export async function POST(request: NextRequest) {
     // 创建处理历史记录
     try {
       historyId = await createProcessingHistory({
-        user_id: user.id,
+        user_id: userId,
         original_image_url: originalImageUrl,
         original_filename: originalFilename,
         processing_status: "processing",
@@ -244,7 +246,7 @@ export async function POST(request: NextRequest) {
       // 释放预留
       await supabase.rpc("release_usage_reservation", {
         p_reservation_id: reservationId,
-        p_user_id: user.id
+        p_user_id: userId
       });
       return NextResponse.json(
         { error: "我们这边出了一点问题，请稍后再试" },
@@ -257,7 +259,7 @@ export async function POST(request: NextRequest) {
 
     try {
       const processedUuid = uuidv4();
-      const processedPath = `images/${user.id}/processed/${processedUuid}.png`;
+      const processedPath = `images/${userId}/processed/${processedUuid}.png`;
 
       // 上传处理后的图片
       processedImageUrl = await uploadImageToR2(response.body, processedPath, "image/png");
@@ -271,7 +273,7 @@ export async function POST(request: NextRequest) {
     const { data: confirmed, error: confirmError } = await supabase
       .rpc("confirm_usage_reservation", {
         p_reservation_id: reservationId,
-        p_user_id: user.id
+        p_user_id: userId
       });
 
     if (confirmError) {

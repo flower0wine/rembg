@@ -1,6 +1,7 @@
 import type { TablesInsert, TablesUpdate } from "./database.types";
 import { toError } from "@/lib/utils";
 import { createClient } from "./server";
+import "server-only";
 
 // 创建处理历史记录
 export async function createProcessingHistory(

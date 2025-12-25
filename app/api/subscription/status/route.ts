@@ -6,7 +6,9 @@ export async function GET() {
   try {
     // Get authenticated user
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data, error: authError } = await supabase.auth.getClaims();
+
+    const user = data?.claims;
 
     if (authError || !user) {
       return NextResponse.json(
@@ -19,7 +21,7 @@ export async function GET() {
     const { data: subscription, error: subError } = await supabase
       .from("user_subscriptions")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", user.sub)
       .single();
 
     if (subError) {
@@ -32,7 +34,7 @@ export async function GET() {
 
     // Generate JWT token
     const token = generateToken({
-      userId: user.id,
+      userId: user.sub,
       email: user.email!,
       plan: subscription.plan,
       usageCount: subscription.usage_count,
@@ -44,7 +46,7 @@ export async function GET() {
 
     return NextResponse.json({
       subscription: {
-        userId: user.id,
+        userId: user.sub,
         email: user.email!,
         plan: subscription.plan,
         usageCount: subscription.usage_count,

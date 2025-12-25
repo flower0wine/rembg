@@ -12,9 +12,11 @@ export async function POST() {
 
     // 获取当前用户
     const {
-      data: { user },
+      data,
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getClaims();
+
+    const user = data?.claims;
 
     if (authError || !user) {
       return NextResponse.json(
@@ -23,9 +25,11 @@ export async function POST() {
       );
     }
 
+    const userId = user.sub;
+
     // 确保用户有订阅
     const { data: subscription, error: subscriptionError }
-      = await ensureUserSubscription(supabase, user.id);
+      = await ensureUserSubscription(supabase, userId);
 
     if (subscriptionError) {
       console.error("Failed to initialize subscription:", subscriptionError);
@@ -59,9 +63,11 @@ export async function GET() {
 
     // 获取当前用户
     const {
-      data: { user },
+      data,
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getClaims();
+
+    const user = data?.claims;
 
     if (authError || !user) {
       return NextResponse.json(
@@ -70,11 +76,13 @@ export async function GET() {
       );
     }
 
+    const userId = user.sub;
+
     // 获取用户订阅
     const { data: subscription, error: subscriptionError } = await supabase
       .from("user_subscriptions")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (subscriptionError) {

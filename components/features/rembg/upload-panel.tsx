@@ -245,14 +245,14 @@ export function UploadPanel({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <motion.p
-            className="text-lg font-medium"
-            animate={{
-              color: isDragging ? "hsl(var(--primary))" : "hsl(var(--foreground))",
-            }}
+          <p
+            className={cn(
+              "text-lg font-medium transition-colors duration-300",
+              isDragging ? "text-primary" : "text-foreground"
+            )}
           >
             {isDragging ? "释放以上传图片" : "点击或拖拽上传图片"}
-          </motion.p>
+          </p>
           <p className="text-sm text-muted-foreground">
             支持
             {" "}
