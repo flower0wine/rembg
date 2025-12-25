@@ -37,7 +37,12 @@ export async function updateSession(request: NextRequest) {
   // This will refresh the session if it's expired
   const {
     data: { user },
+    error
   } = await supabase.auth.getUser();
+
+  if (error) {
+    console.error("获取用户信息出错", error);
+  }
 
   // 如果用户已登录，检查并确保有订阅记录
   if (user) {

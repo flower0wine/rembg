@@ -45,32 +45,15 @@ export function RembgWorkspace() {
 
   const [showTurnstile, setShowTurnstile] = useState(true); // 初始显示（Managed 会自动处理）
 
-  const handleVerify = (newToken: string) => {
-    setTurnstileToken(newToken);
-    setShowTurnstile(false);
-  };
-
-  const handleError = () => {
-    setTurnstileToken(null);
-    toast.error("检测到可能存在自动化操作");
-  };
-
-  const handleExpire = () => {
-    setTurnstileToken(null);
-    setShowTurnstile(true);
-  };
+  // 待处理任务队列
+  const [pendingTasks, setPendingTasks] = useState<Array<{ id: string; file: File }>>([]);
 
   // 使用背景移除API
   const { mutateAsync: removeBackground } = useRemoveBackground();
 
-  // 处理图片背景移除
-  const processImage = async (id: string, file: File) => {
+  // 实际处理图片背景移除（带 token）
+  const processImageWithToken = async (id: string, file: File, token: string) => {
     try {
-      // 检查 Turnstile token
-      if (!turnstileToken) {
-        throw new Error("请完成机器人验证");
-      }
-
       // 更新状态为处理中
       updateImage({
         id,
@@ -83,7 +66,7 @@ export function RembgWorkspace() {
       // 调用背景移除API，传递 Turnstile token
       const result = await removeBackground({
         imageFile: file,
-        turnstileToken
+        turnstileToken: token
       });
 
       // 创建处理后的图片URL
@@ -115,6 +98,52 @@ export function RembgWorkspace() {
 
       toast.error(err.message);
     }
+  };
+
+  const handleVerify = (newToken: string) => {
+    setTurnstileToken(newToken);
+    setShowTurnstile(false);
+
+    // Token 获取后，处理所有待处理的任务
+    if (pendingTasks.length > 0) {
+      pendingTasks.forEach((task) => {
+        processImageWithToken(task.id, task.file, newToken);
+      });
+      setPendingTasks([]);
+    }
+  };
+
+  // 处理图片背景移除（入口函数）
+  const processImage = async (id: string, file: File) => {
+    // 检查 Turnstile token
+    if (!turnstileToken) {
+      // Token 还未获取，将任务加入待处理队列
+      setPendingTasks(prev => [...prev, { id, file }]);
+
+      // 更新状态为等待验证
+      updateImage({
+        id,
+        updates: {
+          status: ImageStatus.Uploading,
+          progress: 10,
+        }
+      });
+
+      return;
+    }
+
+    // Token 已获取，直接处理
+    await processImageWithToken(id, file, turnstileToken);
+  };
+
+  const handleError = (error: unknown) => {
+    setTurnstileToken(null);
+    console.error(toError(error).message);
+  };
+
+  const handleExpire = () => {
+    setTurnstileToken(null);
+    setShowTurnstile(true);
   };
 
   // 处理文件选择

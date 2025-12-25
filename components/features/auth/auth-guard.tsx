@@ -28,7 +28,7 @@ export function AuthGuard({
         router.push(redirectTo);
       }
     }
-  }, [user, loading, requireAuth, redirectTo, router]);
+  }, [user, loading, requireAuth]);
 
   // Show loading state
   if (loading) {

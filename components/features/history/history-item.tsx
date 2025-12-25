@@ -4,6 +4,7 @@ import type { Tables } from "@/lib/supabase/database.types";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Calendar, Clock, Download } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageViewer } from "@/components/ui/image-viewer";
@@ -44,11 +45,11 @@ export function HistoryItem({ item }: HistoryItemProps) {
   const isCompleted = item.processing_status === "completed";
 
   return (
-    <Card className="p-6 hover:shadow-md transition-shadow w-full">
-      <div className="space-y-4">
+    <Card className="p-0 pb-2 hover:shadow-md transition-shadow w-full">
+      <div>
 
         <ImageViewer
-          className={cn(isProcessing && "opacity-40 blur-sm")}
+          className={cn(isProcessing && "opacity-40 blur-sm", "rounded-t-lg overflow-hidden")}
           imageOne={item.processed_image_url || undefined}
           imageTwo={item.original_image_url!}
           imageOneAlt={`${item.original_filename}-original`}
@@ -57,7 +58,7 @@ export function HistoryItem({ item }: HistoryItemProps) {
         />
 
         {/* 操作按钮 */}
-        <div className="flex items-center text-xs justify-between gap-2 pt-2 border-t">
+        <div className="flex items-center text-xs justify-between gap-2 pt-2 pl-4 pr-2">
           <div className="flex gap-3 text-muted-foreground">
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
@@ -70,16 +71,21 @@ export function HistoryItem({ item }: HistoryItemProps) {
               </div>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownload}
-            disabled={!canDownload}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            下载
-          </Button>
+
+
+          {canDownload
+            ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="text-xs">下载</span>
+                </Button>
+              )
+            : <Badge variant="outline">处理失败</Badge>}
         </div>
       </div>
     </Card>
