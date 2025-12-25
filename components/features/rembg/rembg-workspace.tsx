@@ -227,11 +227,11 @@ export function RembgWorkspace() {
           </div>
 
           {/* Turnstile 验证组件 */}
-          <div className="relative h-0 pointer-events-none">
+          <div className="relative h-0 pointer-events-none z-999">
             <AnimatePresence>
               {showTurnstile && (
                 <motion.div
-                  className="absolute left-1/2 -translate-x-1/2 pointer-events-auto"
+                  className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-999"
                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
