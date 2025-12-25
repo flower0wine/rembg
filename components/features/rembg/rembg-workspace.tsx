@@ -5,6 +5,7 @@
  */
 
 import type { ImageItem, UploadError } from "./types";
+import { AxiosError, isAxiosError } from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useTheme } from "next-themes";
@@ -83,20 +84,22 @@ export function RembgWorkspace() {
       });
     }
     catch (error) {
-      const err = toError(error);
+      // const err = toError(error);
+      if (isAxiosError(error)) {
+        const err = new Error(error.response?.data.error);
+        // 更新为错误状态
+        updateImage({
+          id,
+          updates: {
+            status: ImageStatus.Error,
+            error: err
+          }
+        });
 
-      // 更新为错误状态
-      updateImage({
-        id,
-        updates: {
-          status: ImageStatus.Error,
-          error: err
-        }
-      });
+        console.error("背景移除失败:", err);
 
-      console.error("背景移除失败:", err);
-
-      toast.error(err.message);
+        toast.error(err.message);
+      }
     }
   };
 

@@ -1,10 +1,30 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const connectSrc = [
+  "https://image.flowerwine.dpdns.org",
+  "https://*.supabase.co",
+  "https://www.google.com",
+  "https://www.gstatic.com",
+  "https://static.cloudflareinsights.com",
+  "https://cloudflareinsights.com",
+  !isProduction && "ws://127.0.0.1:*",
+  !isProduction && "ws://localhost:*",
+];
+
+const scriptSrc = [
+  "https://www.google.com",
+  "https://www.gstatic.com",
+  "https://challenges.cloudflare.com",
+  "https://static.cloudflareinsights.com",
+];
+
 const cspHeader = `
     default-src 'self';
-    connect-src 'self' https://image.flowerwine.dpdns.org https://*.supabase.co https://www.google.com https://www.gstatic.com https://static.cloudflareinsights.com https://cloudflareinsights.com;
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://challenges.cloudflare.com https://static.cloudflareinsights.com;
+    connect-src 'self' ${connectSrc.join(" ")};
+    script-src 'self' 'unsafe-eval' 'unsafe-inline' ${scriptSrc.join(" ")};
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https: https://image.flowerwine.dpdns.org;
     font-src 'self';

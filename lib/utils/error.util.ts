@@ -1,7 +1,13 @@
+import { AxiosError } from "axios";
+
 export function toError(unknownError: unknown): Error {
   if (unknownError instanceof Error) {
     // 如果它本身就是一个 Error，直接返回
     return unknownError;
+  }
+
+  if (unknownError instanceof AxiosError) {
+    // return new Error(unknownError.response)
   }
 
   // 如果它是一个字符串，用它来创建一个新的 Error
