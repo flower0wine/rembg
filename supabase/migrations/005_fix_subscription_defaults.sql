@@ -80,6 +80,7 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+SET search_path = public;
 
 -- 重新创建触发器
 CREATE TRIGGER on_auth_user_created

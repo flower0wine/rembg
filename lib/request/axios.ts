@@ -1,6 +1,7 @@
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import type { ApiResponse } from "@/lib/types/http";
 import axios from "axios";
+import { ROUTES } from "../constants/routes";
 import { getToken, setToken } from "../utils/browser";
 import { ApiError } from "./api-error";
 import { refreshToken } from "./token";
@@ -82,7 +83,7 @@ api.interceptors.request.use(
           else {
             // 刷新失败，重定向到登录页
             if (isBrowser) {
-              window.location.href = "/login";
+              window.location.href = ROUTES.LOGIN;
             }
             return Promise.reject(new Error("Token refresh failed"));
           }
@@ -178,7 +179,7 @@ api.interceptors.response.use(
             // 刷新失败，清除token并重定向到登录页
             if (isBrowser) {
               setToken();
-              window.location.href = "/login";
+              window.location.href = ROUTES.LOGIN;
             }
             return Promise.reject(error);
           }

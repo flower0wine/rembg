@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ROUTES } from "@/lib/constants/routes";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -18,5 +19,5 @@ export async function GET(request: Request) {
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(`${origin}/`);
+  return NextResponse.redirect(`${origin}${ROUTES.APP}`);
 }

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toError } from "@/lib/utils/error.util";
+import { API_PATHS } from "../constants/api";
+import { ROUTES } from "../constants/routes";
 
 interface AuthState {
   user: User | null;
@@ -124,7 +126,10 @@ export function useAuth() {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         return { data, error };
       },
-      data => setState(prev => ({ ...prev, user: data.user }))
+      (data) => {
+        setState(prev => ({ ...prev, user: data.user }));
+        router.push(ROUTES.APP);
+      }
     );
   }, [supabase, handleAuthAction]);
 
@@ -132,7 +137,13 @@ export function useAuth() {
   const signUp = useCallback(async (email: string, password: string) => {
     return handleAuthAction(
       async () => {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}${ROUTES.APP}`,
+          },
+        });
         return { data, error };
       },
       data => setState(prev => ({ ...prev, user: data.user }))
@@ -145,7 +156,7 @@ export function useAuth() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: `${window.location.origin}${API_PATHS.AUTH_CALLBACK}`,
         },
       });
       return { data, error };
@@ -161,7 +172,7 @@ export function useAuth() {
 
     if (!result.error) {
       setState({ user: null, loading: false, error: null });
-      router.push("/");
+      router.push(ROUTES.LOGIN);
     }
 
     return { error: result.error };

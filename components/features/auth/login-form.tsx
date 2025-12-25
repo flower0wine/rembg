@@ -1,13 +1,14 @@
 "use client";
 
+import type { Provider } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 
+import { z } from "zod";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,7 +63,7 @@ export function LoginForm() {
     }
   };
 
-  const handleOAuthSignIn = async (provider: "google" | "github") => {
+  const handleOAuthSignIn = async (provider: Provider) => {
     setIsLoading(true);
 
     const { error } = await signInWithOAuth(provider);
