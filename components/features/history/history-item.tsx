@@ -43,6 +43,20 @@ export function HistoryItem({ item }: HistoryItemProps) {
   const canDownload = item.processing_status === "completed" && item.processed_image_url;
   const isProcessing = item.processing_status === "processing";
   const isCompleted = item.processing_status === "completed";
+  const isFailed = item.processing_status === "failed";
+
+  const getStatusBadge = () => {
+    if (isProcessing) {
+      return <Badge variant="secondary" className="animate-pulse">处理中...</Badge>;
+    }
+    if (isFailed) {
+      return <Badge variant="destructive">处理失败</Badge>;
+    }
+    if (isCompleted && !item.processed_image_url) {
+      return <Badge variant="destructive">处理失败</Badge>;
+    }
+    return null;
+  };
 
   return (
     <Card className="p-0 pb-2 hover:shadow-md transition-shadow w-full">
@@ -85,7 +99,7 @@ export function HistoryItem({ item }: HistoryItemProps) {
                   <span className="text-xs">下载</span>
                 </Button>
               )
-            : <Badge variant="outline">处理失败</Badge>}
+            : getStatusBadge()}
         </div>
       </div>
     </Card>

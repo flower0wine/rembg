@@ -16,7 +16,6 @@ export type SupabaseAuthResponse = {
 export interface AuthContextType {
   user: User | null;
   isInitAuth: boolean;
-  error: Error | null;
   signInWithOAuth: (provider: Provider) => Promise<OAuthResponse>;
   signInWithOtp: (email: string, emailRedirectTo?: string) => Promise<AuthOtpResponse>;
   signInWithPassword: (email: string, password: string) => Promise<AuthTokenResponsePassword>;

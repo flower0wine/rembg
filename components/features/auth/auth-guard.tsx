@@ -21,8 +21,9 @@ export function AuthGuard({
 }: AuthGuardProps): ReactNode {
   const router = useRouter();
 
-  const { user, isInitAuth, error } = useAuthContext();
-  console.log(!user, isInitAuth);
+  const { user, isInitAuth } = useAuthContext();
+
+  console.log(Boolean(user), isInitAuth);
 
 
   useEffect(() => {
@@ -30,10 +31,6 @@ export function AuthGuard({
       router.push(redirectTo);
     }
   }, [user, requireAuth, isInitAuth]);
-
-  if (error) {
-    console.error("验证失败", error);
-  }
 
   // Show loading state
   if (!isInitAuth) {

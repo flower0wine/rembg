@@ -10,38 +10,31 @@ export function useAuth() {
   const supabase = createClient();
   const [isInitAuth, setIsInitAuth] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-
-  const authUser = async () => {
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error) {
-      console.error("获取用户信息出错", error);
-    }
-
-    return {
-      user: data.user,
-      error,
-    };
-  };
-
-  const setAuthUser = async () => {
-    const { user, error } = await authUser();
-
-    setIsInitAuth(true);
-    setUser(user);
-    setError(error);
-  };
-
-  useEffect(() => {
-    setAuthUser();
-  }, []);
 
   const listenAuthStateChange = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
-        if (event === "SIGNED_OUT" || event === "USER_UPDATED" || event === "PASSWORD_RECOVERY") {
-          setAuthUser();
+        const user = session?.user || null;
+
+        console.log(event);
+
+
+        setUser(user);
+
+        if (event === "INITIAL_SESSION") {
+          console.log(session?.user);
+
+          setIsInitAuth(true);
+        }
+        else if (event === "SIGNED_IN") {
+          //
+        }
+        else if (event === "SIGNED_OUT") {
+          // setAuthUser();
+        }
+        else if (event === "USER_UPDATED"
+          || event === "PASSWORD_RECOVERY") {
+          // nothing to do ...
         }
       }
     );
@@ -124,7 +117,6 @@ export function useAuth() {
 
   return {
     user,
-    error,
     isInitAuth,
     signInWithOAuth,
     signInWithOtp,
