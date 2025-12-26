@@ -3,11 +3,12 @@
 import type { Provider } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
+import { toast } from "sonner";
 import { z } from "zod";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const { signIn, signInWithOAuth } = useAuthContext();
+  const { signInWithPassword, signInWithOAuth } = useAuthContext();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || ROUTES.APP;
@@ -42,7 +43,7 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
 
-    const { error } = await signIn(data.email, data.password);
+    const { error } = await signInWithPassword(data.email, data.password);
 
     if (error) {
       toast.error("登录失败", {
@@ -75,6 +76,8 @@ export function LoginForm() {
       setIsLoading(false);
     }
   };
+
+  const registerUrl = `${ROUTES.REGISTER}${redirectTo ? `?redirectTo=${redirectTo}` : ""}`;
 
   return (
     <Card className="w-full max-w-md">
@@ -166,9 +169,9 @@ export function LoginForm() {
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
           <span>还没有账户？</span>
-          <a href={ROUTES.REGISTER} className="text-primary hover:underline">
+          <Link href={registerUrl} className="text-primary hover:underline">
             注册
-          </a>
+          </Link>
         </p>
       </CardFooter>
     </Card>

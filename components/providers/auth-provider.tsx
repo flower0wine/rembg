@@ -1,18 +1,31 @@
 "use client";
 
-import type { Provider, User } from "@supabase/supabase-js";
+import type { AuthError, AuthOtpResponse, AuthResponse, AuthTokenResponsePassword, GoTrueClient, OAuthResponse, Provider, ResendParams, User } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
 import { useAuth } from "@/lib/hooks/use-auth";
 
-interface AuthContextType {
+export type SupabaseAuthResponse = {
+  data: object;
+  error: null;
+} | {
+  data: null;
+  error: AuthError;
+};
+
+export interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isInitAuth: boolean;
   error: Error | null;
-  signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
-  signUp: (email: string, password: string) => Promise<{ data: any; error: any }>;
-  signInWithOAuth: (provider: Provider) => Promise<{ data: any; error: any }>;
-  signOut: () => Promise<{ error: any }>;
+  signInWithOAuth: (provider: Provider) => Promise<OAuthResponse>;
+  signInWithOtp: (email: string, emailRedirectTo?: string) => Promise<AuthOtpResponse>;
+  signInWithPassword: (email: string, password: string) => Promise<AuthTokenResponsePassword>;
+  signUp: (email: string, password: string, emailRedirectTo?: string) => Promise<AuthResponse>;
+  signOut: () => Promise<{
+    error: AuthError | null;
+  }>;
+  resetPasswordForEmail: (email: string) => Promise<SupabaseAuthResponse>;
+  resend: (credentials: ResendParams) => Promise<AuthOtpResponse>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

@@ -20,7 +20,6 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <Header />
       <HeroSection
         title="一键移除图片背景"
         subtitle="使用AI技术快速移除图片背景，支持单张和批量处理。无需专业技能，简单易用，效果专业。"

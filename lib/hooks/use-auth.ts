@@ -1,190 +1,137 @@
-"use client";
-
-import type { Provider, User } from "@supabase/supabase-js";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { toError } from "@/lib/utils/error.util";
+import type { AuthChangeEvent, Provider, ResendParams, Session, User } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
 import { API_PATHS } from "../constants/api";
-import { ROUTES } from "../constants/routes";
+import { createClient } from "../supabase/client";
 
-interface AuthState {
-  user: User | null;
-  loading: boolean;
-  error: Error | null;
-}
-
+/**
+ * 该 Hook 最好只在 Context 当中使用
+ */
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    loading: true,
-    error: null,
-  });
-  const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
-  const currentUserRef = useRef<User>(undefined);
+  const supabase = createClient();
+  const [isInitAuth, setIsInitAuth] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Initialize auth state
+  const authUser = async () => {
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error) {
+      console.error("获取用户信息出错", error);
+    }
+
+    return {
+      user: data.user,
+      error,
+    };
+  };
+
+  const setAuthUser = async () => {
+    const { user, error } = await authUser();
+
+    setIsInitAuth(true);
+    setUser(user);
+    setError(error);
+  };
+
   useEffect(() => {
-    let isInitialLoad = true;
-
-    const initAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        setState({
-          user: error ? null : user,
-          loading: false,
-          error: error || null
-        });
-      }
-      catch (error) {
-        setState({
-          user: null,
-          loading: false,
-          error: toError(error)
-        });
-      }
-    };
-
-    initAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        const newUser = session?.user ?? null;
-
-        // Update state for all events
-        setState({
-          user: session?.user ?? null,
-          loading: false,
-          error: null,
-        });
-
-        currentUserRef.current = session?.user;
-
-        // Define which events should trigger a router refresh
-        // Only refresh on user-initiated actions that change auth state
-        const shouldRefresh = !isInitialLoad && (
-          (event === "SIGNED_IN" && currentUserRef.current === null && newUser !== null) // User just signed in
-          || event === "SIGNED_OUT" // User just signed out
-          || event === "PASSWORD_RECOVERY" // User is recovering password
-          || event === "USER_UPDATED" // User profile was updated (e.g., email change)
-        );
-
-        // Don't refresh on:
-        // - INITIAL_SESSION: Page load, session restoration
-        // - TOKEN_REFRESHED: Automatic token refresh (happens frequently)
-        // - MFA_CHALLENGE_VERIFIED: MFA verification (handled separately)
-
-        if (shouldRefresh) {
-          router.refresh();
-        }
-
-        // After the first auth state change, mark as no longer initial load
-        if (isInitialLoad && (event === "INITIAL_SESSION" || event === "SIGNED_IN")) {
-          isInitialLoad = false;
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase, router]);
-
-  // Generic auth action handler
-  const handleAuthAction = useCallback(async <T>(
-    action: () => Promise<{ data?: T; error: Error | null }>,
-    onSuccess?: (data: T) => void
-  ) => {
-    try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      const result = await action();
-
-      if (result.error) {
-        setState(prev => ({ ...prev, loading: false, error: result.error }));
-        return { data: null, error: result.error };
-      }
-
-      setState(prev => ({ ...prev, loading: false, error: null }));
-      if (result.data && onSuccess) {
-        onSuccess(result.data);
-      }
-      return { data: result.data ?? null, error: null };
-    }
-    catch (error) {
-      const err = toError(error);
-      setState(prev => ({ ...prev, loading: false, error: err }));
-      return { data: null, error: err };
-    }
+    setAuthUser();
   }, []);
 
-  // Sign in with email and password
-  const signIn = useCallback(async (email: string, password: string) => {
-    return handleAuthAction(
-      async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        return { data, error };
-      },
-      (data) => {
-        setState(prev => ({ ...prev, user: data.user }));
-        router.push(ROUTES.APP);
+  const listenAuthStateChange = () => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, session: Session | null) => {
+        if (event === "SIGNED_OUT" || event === "USER_UPDATED" || event === "PASSWORD_RECOVERY") {
+          setAuthUser();
+        }
       }
     );
-  }, [supabase, handleAuthAction]);
 
-  // Sign up with email and password
-  const signUp = useCallback(async (email: string, password: string) => {
-    return handleAuthAction(
-      async () => {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}${ROUTES.APP}`,
-          },
-        });
-        return { data, error };
+    return () => subscription.unsubscribe();
+  };
+
+  useEffect(() => {
+    const unsubscribe = listenAuthStateChange();
+
+    return () => unsubscribe();
+  }, []);
+
+  /**
+   * 第三方登录
+   * @param provider
+   */
+  const signInWithOAuth = async (provider: Provider) => {
+    return supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}${API_PATHS.AUTH_CALLBACK}`,
       },
-      data => setState(prev => ({ ...prev, user: data.user }))
-    );
-  }, [supabase, handleAuthAction]);
-
-  // Sign in with OAuth provider
-  const signInWithOAuth = useCallback(async (provider: Provider) => {
-    return handleAuthAction(async () => {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}${API_PATHS.AUTH_CALLBACK}`,
-        },
-      });
-      return { data, error };
     });
-  }, [supabase, handleAuthAction]);
+  };
 
-  // Sign out
-  const signOut = useCallback(async () => {
-    const result = await handleAuthAction(async () => {
-      const { error } = await supabase.auth.signOut();
-      return { error };
+  const signOut = async () => {
+    return supabase.auth.signOut();
+  };
+
+  /**
+   * 验证码登录
+   * @param email
+   * @param emailRedirectTo
+   */
+  const signInWithOtp = async (email: string, emailRedirectTo?: string) => {
+    return supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo,
+      },
     });
+  };
 
-    if (!result.error) {
-      setState({ user: null, loading: false, error: null });
-      router.push(ROUTES.LOGIN);
-    }
+  /**
+   * 邮箱密码登录
+   * @param email
+   * @param password
+   */
+  const signInWithPassword = async (email: string, password: string) => {
+    return supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+  };
 
-    return { error: result.error };
-  }, [supabase, router, handleAuthAction]);
+  /**
+   * 邮箱密码注册
+   * @param email
+   * @param password
+   * @param emailRedirectTo
+   */
+  const signUp = async (email: string, password: string, emailRedirectTo?: string) => {
+    return supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo,
+      },
+    });
+  };
+
+  const resetPasswordForEmail = async (email: string) => {
+    return supabase.auth.resetPasswordForEmail(email);
+  };
+
+  const resend = async (credentials: ResendParams) => {
+    return supabase.auth.resend(credentials);
+  };
 
   return {
-    user: state.user,
-    loading: state.loading,
-    error: state.error,
-    signIn,
-    signUp,
+    user,
+    error,
+    isInitAuth,
     signInWithOAuth,
+    signInWithOtp,
+    signInWithPassword,
+    signUp,
     signOut,
+    resetPasswordForEmail,
+    resend,
   };
 }

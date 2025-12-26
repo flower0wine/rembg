@@ -13,7 +13,7 @@ export default function AppPage() {
   return (
     <AuthGuard>
       <div className="flex-1 flex flex-col">
-        <div className="container flex-1 mx-auto px-4 py-8 flex flex-col items-center justify-center max-w-[800px]">
+        <div className="container flex-1 mx-auto px-4 py-8 flex flex-col items-center justify-center max-w-200">
           <Suspense fallback={<PageLoading message="正在加载" />}>
             <RembgWorkspace />
           </Suspense>

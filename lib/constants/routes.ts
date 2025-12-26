@@ -15,6 +15,8 @@ export const ROUTES = {
   // 应用功能
   APP: "/app",
   HISTORY: "/history",
+
+  VERIFY_EMAIL: "/verify-email"
 } as const;
 
 /**

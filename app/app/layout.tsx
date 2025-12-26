@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { FullscreenDropZone } from "@/components/features/rembg";
-import { Header } from "@/components/layout/header";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
 
 export const metadata: Metadata = {
@@ -22,7 +21,6 @@ export default function AppLayout({
     <FullscreenDropProvider>
       <FullscreenDropZone>
         <div className="h-screen flex flex-col overflow-hidden">
-          <Header />
           <main className="flex-1 flex flex-col overflow-auto">{children}</main>
         </div>
       </FullscreenDropZone>

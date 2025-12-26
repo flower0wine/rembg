@@ -19,19 +19,24 @@ export function AuthGuard({
   redirectTo = ROUTES.LOGIN,
   fallback = null,
 }: AuthGuardProps): ReactNode {
-  const { user, loading } = useAuthContext();
   const router = useRouter();
 
+  const { user, isInitAuth, error } = useAuthContext();
+  console.log(!user, isInitAuth);
+
+
   useEffect(() => {
-    if (!loading) {
-      if (requireAuth && !user) {
-        router.push(redirectTo);
-      }
+    if (requireAuth && !user && isInitAuth) {
+      router.push(redirectTo);
     }
-  }, [user, loading, requireAuth]);
+  }, [user, requireAuth, isInitAuth]);
+
+  if (error) {
+    console.error("验证失败", error);
+  }
 
   // Show loading state
-  if (loading) {
+  if (!isInitAuth) {
     return fallback || (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/layout/footer";
-import { Header } from "@/components/layout/header";
 
 export const metadata: Metadata = {
   title: "处理历史",
@@ -19,7 +18,6 @@ export default function HistoryLayout({
 }) {
   return (
     <>
-      <Header />
       <main className="min-h-screen">{children}</main>
       <Footer />
     </>

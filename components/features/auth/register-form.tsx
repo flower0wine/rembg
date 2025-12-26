@@ -3,11 +3,12 @@
 import type { Provider } from "@supabase/supabase-js";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 
+import { toast } from "sonner";
 import { z } from "zod";
 import { useAuthContext } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ export function RegisterForm() {
   const { signUp, signInWithOAuth } = useAuthContext();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo");
 
   const {
     register,
@@ -51,18 +54,10 @@ export function RegisterForm() {
         description: error.message || "请稍后重试",
       });
       setIsLoading(false);
+      return;
     }
-    else {
-      // 注册成功后获取订阅信息和token
-      try {
-        await getSubscriptionStatus();
-        router.push(ROUTES.APP);
-      }
-      catch (err) {
-        console.error("Failed to fetch subscription:", err);
-        router.push(ROUTES.APP);
-      }
-    }
+
+    router.push(`${ROUTES.VERIFY_EMAIL}?email=${data.email}`);
   };
 
   const handleOAuthSignIn = async (provider: Provider) => {
@@ -77,6 +72,8 @@ export function RegisterForm() {
       setIsLoading(false);
     }
   };
+
+  const loginUrl = `${ROUTES.LOGIN}${redirectTo ? `?redirectTo=${redirectTo}` : ""}`;
 
   return (
     <Card className="w-full max-w-md">
@@ -182,9 +179,9 @@ export function RegisterForm() {
       <CardFooter className="flex justify-center">
         <p className="text-sm text-muted-foreground">
           <span>已有账户？</span>
-          <a href={ROUTES.LOGIN} className="text-primary hover:underline">
+          <Link href={loginUrl} className="text-primary hover:underline">
             登录
-          </a>
+          </Link>
         </p>
       </CardFooter>
     </Card>

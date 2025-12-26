@@ -3,13 +3,11 @@
 import type { SubscriptionPlan } from "@/lib/types";
 import type { PricingPlanData } from "@/lib/types/pricing";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PricingCard } from "@/components/features/pricing/pricing-card";
 import { PricingToggle } from "@/components/features/pricing/pricing-toggle";
 import { useSubscriptionStatus } from "@/lib/hooks/use-subscription-status";
-import { useUpgradeSubscription } from "@/lib/hooks/use-upgrade-subscription";
 import { createClient } from "@/lib/supabase/client";
 
 interface PricingSectionProps {
@@ -17,70 +15,26 @@ interface PricingSectionProps {
 }
 
 export function PricingSection({ plans }: PricingSectionProps) {
-  const router = useRouter();
-  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">(
-    "monthly",
-  );
-  const [loadingPlan, setLoadingPlan] = useState<SubscriptionPlan | null>(null);
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
   const [userId, setUserId] = useState<string | undefined>(undefined);
 
-  // 分别调用两个 hook
   const { data } = useSubscriptionStatus();
-  const upgradeMutation = useUpgradeSubscription();
-
   const subscription = data?.subscription;
 
-  // 获取当前登录用户的 ID
   useEffect(() => {
     const getCurrentUser = async () => {
       const supabase = createClient();
       const { data } = await supabase.auth.getClaims();
-
-      const user = data?.claims;
-
-      setUserId(user?.id);
+      setUserId(data?.claims?.id);
     };
 
     getCurrentUser();
   }, []);
 
   const handlePlanSelect = (plan: SubscriptionPlan) => {
-    // If user is not logged in, redirect to login
-
-    if (!subscription) {
-      router.push("/login");
-      return;
-    }
-
-    // If selecting free plan, show message
-    if (plan === "free") {
-      return;
-    }
-
-    // 设置当前正在处理的计划
-    setLoadingPlan(plan);
-
-    // Upgrade to selected plan
-    upgradeMutation.mutate(
-      {
-        plan,
-        billingPeriod,
-      },
-      {
-        onSuccess: () => {
-          toast.success("升级成功！", {
-            description: "您的订阅计划已更新",
-          });
-          setLoadingPlan(null);
-        },
-        onError: (error: any) => {
-          toast.error("升级失败", {
-            description: error.message || "请稍后重试",
-          });
-          setLoadingPlan(null);
-        },
-      },
-    );
+    toast.info("暂不提供该订阅方案", {
+      description: "目前只支持升级 Pro 计划",
+    });
   };
 
   return (
@@ -107,8 +61,6 @@ export function PricingSection({ plans }: PricingSectionProps) {
             plan={plan}
             billingPeriod={billingPeriod}
             onSelect={handlePlanSelect}
-            isLoading={upgradeMutation.isPending}
-            loadingPlan={loadingPlan}
             currentPlan={subscription?.plan}
             userId={userId}
             index={index}

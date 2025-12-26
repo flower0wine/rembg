@@ -4,7 +4,7 @@ import type { SubscriptionPlan } from "@/lib/types";
 import type { PricingPlanData } from "@/lib/types/pricing";
 import { CreemCheckout } from "@creem_io/nextjs";
 import { motion } from "framer-motion";
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,32 +23,80 @@ export interface PricingCardProps {
   plan: PricingPlanData;
   billingPeriod: "monthly" | "annual";
   onSelect: (planId: SubscriptionPlan) => void;
-  isLoading?: boolean;
-  loadingPlan?: SubscriptionPlan | null;
   currentPlan?: string;
   userId?: string;
   index?: number;
+}
+
+interface PlanBadgeProps {
+  isCurrentPlan: boolean;
+  isFeatured: boolean;
+  index: number;
+}
+
+function PlanBadge({ isCurrentPlan, isFeatured, index }: PlanBadgeProps) {
+  if (!isCurrentPlan && !isFeatured)
+    return null;
+
+  const badgeConfig = {
+    current: {
+      className: "bg-green-500 text-white",
+      label: "当前方案",
+    },
+    featured: {
+      className: "bg-primary text-primary-foreground",
+      label: "Recommended",
+    },
+    both: {
+      className: "bg-gradient-to-r from-green-500 to-primary text-white",
+      label: "当前方案 · Recommended",
+    },
+  };
+
+  const config = isCurrentPlan && isFeatured
+    ? badgeConfig.both
+    : isCurrentPlan
+      ? badgeConfig.current
+      : badgeConfig.featured;
+
+  return (
+    <motion.div
+      className={cn(
+        "absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-sm font-medium shadow-lg flex items-center gap-2",
+        config.className,
+      )}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.1 + 0.3, duration: 0.3 }}
+    >
+      {isCurrentPlan && <Check className="w-4 h-4" />}
+      <span>{config.label}</span>
+    </motion.div>
+  );
 }
 
 export function PricingCard({
   plan,
   billingPeriod,
   onSelect,
-  isLoading = false,
-  loadingPlan = null,
   currentPlan,
   userId,
   index = 0,
 }: PricingCardProps) {
-  // 使用转换后的前端数据（单位：美元）
-  const price = billingPeriod === "monthly"
-    ? plan.monthlyPrice
-    : plan.annualPrice;
-  const displayPrice = billingPeriod === "annual" ? price / 12 : price;
   const isCurrentPlan = currentPlan === plan.plan;
-  const isThisCardLoading = isLoading && loadingPlan === plan.plan;
+  const isProPlan = plan.plan === "pro";
 
-  const ctaText = plan.plan === "free" ? "Get Started" : "Upgrade Now";
+  const price = billingPeriod === "monthly" ? plan.monthlyPrice : plan.annualPrice;
+  const displayPrice = billingPeriod === "annual" ? price / 12 : price;
+  const isAnnualBilling = billingPeriod === "annual" && price > 0;
+
+  const getButtonText = () => {
+    if (isCurrentPlan)
+      return "当前方案";
+    return plan.plan === "free" ? "Get Started" : "Upgrade Now";
+  };
+
+  const isButtonDisabled = isCurrentPlan || (!userId && isProPlan);
 
   return (
     <motion.div
@@ -64,50 +112,15 @@ export function PricingCard({
       <Card
         className={cn(
           "relative flex flex-col transition-all hover:shadow-lg",
-          plan.isFeatured && !isCurrentPlan
-          && "border-primary shadow-lg scale-105 hover:scale-[1.07]",
-          isCurrentPlan && plan.isFeatured
-          && "border-primary shadow-xl scale-105 hover:scale-[1.07]",
+          plan.isFeatured && "border-primary shadow-lg scale-105 hover:scale-[1.07]",
           isCurrentPlan && !plan.isFeatured && "border-green-500",
         )}
       >
-        {/* 合并标签：当既是推荐方案又是当前方案时，显示组合标签 */}
-        {isCurrentPlan && plan.isFeatured
-          ? (
-              <motion.div
-                className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-primary text-white px-4 py-1 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 + 0.3, duration: 0.3 }}
-              >
-                <Check className="w-4 h-4" />
-                <span>当前方案 · Recommended</span>
-              </motion.div>
-            )
-          : isCurrentPlan
-            ? (
-                <motion.div
-                  className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 + 0.3, duration: 0.4, type: "spring" }}
-                >
-                  <Check className="w-4 h-4" />
-                  <span>当前方案</span>
-                </motion.div>
-              )
-            : plan.isFeatured
-              ? (
-                  <motion.div
-                    className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium shadow-lg"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 + 0.3, duration: 0.3 }}
-                  >
-                    Recommended
-                  </motion.div>
-                )
-              : null}
+        <PlanBadge
+          isCurrentPlan={isCurrentPlan}
+          isFeatured={plan.isFeatured}
+          index={index}
+        />
 
         <CardHeader>
           <CardTitle className="text-2xl">{plan.displayName}</CardTitle>
@@ -123,7 +136,7 @@ export function PricingCard({
               </span>
               <span className="text-muted-foreground text-sm">/month</span>
             </div>
-            {billingPeriod === "annual" && price > 0 && (
+            {isAnnualBilling && (
               <p className="text-xs text-muted-foreground">
                 Billed $
                 {price.toFixed(0)}
@@ -137,60 +150,32 @@ export function PricingCard({
         </CardContent>
 
         <CardFooter>
-          {plan.plan === "pro"
+          {isProPlan
             ? (
-                <CreemCheckout
-                  productId={projectId}
-                  successUrl="/subscription/checkout"
-                  referenceId={userId}
-                >
-                  <Button
-                    className="w-full"
-                    variant={plan.isFeatured ? "default" : "outline"}
-                    disabled={isLoading || isCurrentPlan || !userId}
+                <div className="[&>a]:w-full w-full">
+                  <CreemCheckout
+                    productId={projectId}
+                    successUrl="/subscription/checkout"
+                    referenceId={userId}
                   >
-                    {isThisCardLoading
-                      ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            处理中...
-                          </>
-                        )
-                      : isCurrentPlan
-                        ? (
-                            "当前方案"
-                          )
-                        : !userId
-                            ? (
-                                "请先登录"
-                              )
-                            : (
-                                ctaText
-                              )}
-                  </Button>
-                </CreemCheckout>
+                    <Button
+                      className="w-full"
+                      variant={plan.isFeatured ? "default" : "outline"}
+                      disabled={isButtonDisabled}
+                    >
+                      {getButtonText()}
+                    </Button>
+                  </CreemCheckout>
+                </div>
               )
             : (
                 <Button
                   className="w-full"
                   variant={plan.isFeatured ? "default" : "outline"}
                   onClick={() => onSelect(plan.plan)}
-                  disabled={isLoading || isCurrentPlan}
+                  disabled={isCurrentPlan}
                 >
-                  {isThisCardLoading
-                    ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          处理中...
-                        </>
-                      )
-                    : isCurrentPlan
-                      ? (
-                          "当前方案"
-                        )
-                      : (
-                          ctaText
-                        )}
+                  {getButtonText()}
                 </Button>
               )}
         </CardFooter>
