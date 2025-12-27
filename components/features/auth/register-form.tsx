@@ -16,7 +16,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROUTES } from "@/lib/constants/routes";
-import { getSubscriptionStatus } from "@/lib/request/api/subscription";
 
 const registerSchema = z.object({
   email: z.email("请输入有效的邮箱地址"),

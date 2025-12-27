@@ -16,14 +16,9 @@ export function useAuth() {
       (event: AuthChangeEvent, session: Session | null) => {
         const user = session?.user || null;
 
-        console.log(event);
-
-
         setUser(user);
 
         if (event === "INITIAL_SESSION") {
-          console.log(session?.user);
-
           setIsInitAuth(true);
         }
         else if (event === "SIGNED_IN") {

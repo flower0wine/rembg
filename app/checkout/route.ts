@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const checkoutHandler = Checkout({
     apiKey: process.env.CREEM_API_KEY!,
     testMode: process.env.NODE_ENV !== "production",
-    defaultSuccessUrl: "/thank-you",
+    defaultSuccessUrl: ROUTES.SUBSCRIPTION_CHECKOUT,
   });
 
   return checkoutHandler(request);

@@ -56,7 +56,6 @@ async function createFreeSubscription(
     return { data: null, error };
   }
 
-  console.log(`Created free subscription for user ${userId}`);
   return { data, error: null };
 }
 

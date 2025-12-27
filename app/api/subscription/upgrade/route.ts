@@ -1,10 +1,8 @@
-import type { Tables, TablesInsert, TablesUpdate } from "@/lib/supabase/database.types";
-import type { BillingPeriod, SubscriptionPlan } from "@/lib/types";
+import type { TablesInsert } from "@/lib/supabase/database.types";
 import dayjs from "dayjs";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPlanLimits } from "@/lib/supabase/subscription-plans";
-import { generateToken } from "@/lib/utils/jwt";
 
 export async function POST(request: Request) {
   try {
@@ -28,14 +26,14 @@ export async function POST(request: Request) {
     }
 
     // Fetch plan limits from database (single source of truth)
-    const limits = await getPlanLimits(plan as SubscriptionPlan);
+    const limits = await getPlanLimits(plan);
 
     // Calculate end date (1 month for monthly billing)
     const endDate = dayjs().add(1, "month").toISOString();
 
     const upsertData: TablesInsert<"user_subscriptions"> = {
       user_id: user.id,
-      plan: plan as SubscriptionPlan,
+      plan,
       ...limits,
       is_active: true,
       subscription_start_date: dayjs().toISOString(),
@@ -65,22 +63,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const sub = subscription as Tables<"user_subscriptions">;
-
-    const token = generateToken({
-      userId: user.id,
-      email: user.email!,
-      plan: sub.plan,
-      usageCount: sub.usage_count,
-      maxUsageLimit: sub.max_usage_limit,
-      maxFileSizeKb: sub.max_file_size_kb,
-      maxConcurrent: sub.max_concurrent,
-      hasPrioritySupport: sub.has_priority_support,
-    });
-
     return NextResponse.json({
       success: true,
-      token,
     });
   }
   catch (error) {

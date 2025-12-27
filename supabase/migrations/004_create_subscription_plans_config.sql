@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS public.subscription_plans_config (
   has_advanced_analytics BOOLEAN NOT NULL DEFAULT false,
   
   -- Pricing
+  price_monthly DECIMAL(10, 2) NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'USD',
   
   -- Display order and visibility
@@ -87,3 +88,87 @@ CREATE POLICY "Service role can manage plans"
 COMMENT ON TABLE public.subscription_plans_config IS 'Centralized subscription plans configuration - single source of truth for pricing';
 COMMENT ON COLUMN public.subscription_plans_config.features_json IS 'Array of feature descriptions for display on pricing page';
 COMMENT ON COLUMN public.subscription_plans_config.metadata IS 'Additional flexible metadata for future extensions';
+
+-- ==================
+-- 初始数据插入
+-- ==================
+INSERT INTO public.subscription_plans_config (
+  plan,
+  display_name,
+  description,
+  max_usage_limit,
+  max_file_size_kb,
+  max_concurrent,
+  has_priority_support,
+  has_advanced_analytics,
+  price_monthly,
+  currency,
+  display_order,
+  is_visible,
+  is_featured,
+  features_json
+) VALUES
+  (
+    'free',
+    'Free',
+    'Perfect for getting started',
+    1,
+    512,
+    1,
+    false,
+    false,
+    0,
+    'USD',
+    1,
+    true,
+    false,
+    '[
+      "1 use per month",
+      "500KB max file size",
+      "1 concurrent upload",
+      "Basic support"
+    ]'::jsonb
+  ),
+  (
+    'starter',
+    'Starter',
+    'Great for individuals and small teams',
+    100,
+    1024,
+    2,
+    false,
+    false,
+    9.9,
+    'USD',
+    2,
+    true,
+    false,
+    '[
+      "100 uses per month",
+      "1MB max file size",
+      "2 concurrent uploads",
+      "Email support"
+    ]'::jsonb
+  ),
+  (
+    'pro',
+    'Pro',
+    'For professionals and growing businesses',
+    250,
+    3072,
+    3,
+    true,
+    true,
+    19.9,
+    'USD',
+    3,
+    true,
+    true,
+    '[
+      "250 uses per month",
+      "3MB max file size",
+      "3 concurrent uploads",
+      "Priority support"
+    ]'::jsonb
+  );
+

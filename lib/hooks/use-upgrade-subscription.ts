@@ -1,12 +1,11 @@
 "use client";
 
-import type { SubscriptionPlan } from "../types";
+import type { Enums } from "../supabase/database.types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { upgradeSubscription } from "../request/api/subscription";
-import { setToken } from "../utils/browser";
 
 interface UpgradeSubscriptionParams {
-  plan: SubscriptionPlan;
+  plan: Enums<"subscription_plan">;
   billingPeriod?: string;
 }
 
@@ -27,10 +26,6 @@ export function useUpgradeSubscription() {
       });
 
       const data = response.data.data;
-
-      if (data) {
-        setToken(data.token);
-      }
 
       return data!;
     },

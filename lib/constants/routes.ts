@@ -16,7 +16,9 @@ export const ROUTES = {
   APP: "/app",
   HISTORY: "/history",
 
-  VERIFY_EMAIL: "/verify-email"
+  VERIFY_EMAIL: "/verify-email",
+
+  SUBSCRIPTION_CHECKOUT: "/subscription/checkout",
 } as const;
 
 /**

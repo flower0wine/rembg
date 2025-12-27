@@ -51,7 +51,6 @@ export function LoginForm() {
       setIsLoading(false);
     }
     else {
-      // 登录成功后获取订阅信息和token
       router.push(redirectTo);
     }
   };

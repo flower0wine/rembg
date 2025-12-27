@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { generateToken } from "@/lib/utils/jwt";
 
 export async function GET() {
   try {
@@ -32,30 +31,12 @@ export async function GET() {
       );
     }
 
-    // Generate JWT token
-    const token = generateToken({
-      userId: user.sub,
-      email: user.email!,
-      plan: subscription.plan,
-      usageCount: subscription.usage_count,
-      maxUsageLimit: subscription.max_usage_limit,
-      maxFileSizeKb: subscription.max_file_size_kb,
-      maxConcurrent: subscription.max_concurrent,
-      hasPrioritySupport: subscription.has_priority_support,
-    });
-
     return NextResponse.json({
       subscription: {
         userId: user.sub,
         email: user.email!,
-        plan: subscription.plan,
-        usageCount: subscription.usage_count,
-        maxUsageLimit: subscription.max_usage_limit,
-        maxFileSizeKb: subscription.max_file_size_kb,
-        maxConcurrent: subscription.max_concurrent,
-        hasPrioritySupport: subscription.has_priority_support,
+        ...subscription,
       },
-      token,
     });
   }
   catch (error) {

@@ -1,5 +1,4 @@
-import type { SubscriptionPlan } from "../types";
-import type { Tables } from "./database.types";
+import type { Enums, Tables } from "./database.types";
 import { createClient } from "./server";
 import "server-only";
 
@@ -26,7 +25,7 @@ export async function getVisiblePlans(): Promise<Tables<"subscription_plans_conf
 /**
  * Get specific plan configuration
  */
-export async function getPlanConfig(plan: SubscriptionPlan): Promise<Tables<"subscription_plans_config"> | null> {
+export async function getPlanConfig(plan: Enums<"subscription_plan">): Promise<Tables<"subscription_plans_config"> | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -46,7 +45,7 @@ export async function getPlanConfig(plan: SubscriptionPlan): Promise<Tables<"sub
 /**
  * Get plan limits for subscription creation/update
  */
-export async function getPlanLimits(plan: SubscriptionPlan) {
+export async function getPlanLimits(plan: Enums<"subscription_plan">) {
   const config = await getPlanConfig(plan);
 
   if (!config) {

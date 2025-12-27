@@ -71,6 +71,7 @@ export interface Database {
           max_usage_limit: number;
           metadata: Json | null;
           plan: Database["public"]["Enums"]["subscription_plan"];
+          price_monthly: number;
           updated_at: string;
         };
         Insert: {
@@ -90,6 +91,7 @@ export interface Database {
           max_usage_limit: number;
           metadata?: Json | null;
           plan: Database["public"]["Enums"]["subscription_plan"];
+          price_monthly?: number;
           updated_at?: string;
         };
         Update: {
@@ -109,6 +111,7 @@ export interface Database {
           max_usage_limit?: number;
           metadata?: Json | null;
           plan?: Database["public"]["Enums"]["subscription_plan"];
+          price_monthly?: number;
           updated_at?: string;
         };
         Relationships: [];

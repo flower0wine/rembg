@@ -4,18 +4,18 @@ import { getVisiblePlans } from "@/lib/supabase/subscription-plans";
 
 export const metadata: Metadata = {
   title: "定价方案",
-  description: "选择适合您需求的AI背景移除工具定价方案。提供免费试用、个人版和专业版，支持单张和批量处理，满足不同用户需求。",
+  description: "选择适合您需求的AI背景移除工具定价方案。提供 Free、Starter 和 Pro，支持单张和批量处理，满足不同用户需求。",
   keywords: ["定价", "价格", "套餐", "AI背景移除价格", "图片处理定价", "批量处理价格", "订阅方案"],
   openGraph: {
     title: "定价方案 - AI背景移除工具",
-    description: "选择适合您需求的AI背景移除工具定价方案。提供免费试用、个人版和专业版，支持单张和批量处理。",
+    description: "选择适合您需求的AI背景移除工具定价方案。提供 Free、Starter 和 Pro，支持单张和批量处理。",
     type: "website",
     url: "/pricing",
   },
   twitter: {
     card: "summary_large_image",
     title: "定价方案 - AI背景移除工具",
-    description: "选择适合您需求的AI背景移除工具定价方案。提供免费试用、个人版和专业版，支持单张和批量处理。",
+    description: "选择适合您需求的AI背景移除工具定价方案。提供 Free、Starter 和 Pro，支持单张和批量处理。",
   },
   alternates: {
     canonical: "/pricing",
@@ -63,19 +63,13 @@ export default async function PricingPage() {
           </p>
         </header>
 
-        <main>
+        <main className="flex justify-center">
           <PricingSection plans={plans} />
         </main>
 
         <section className="mt-16 text-center">
           <h2 className="text-2xl font-semibold mb-4">常见问题</h2>
           <div className="max-w-3xl mx-auto text-left space-y-4">
-            <details className="border rounded-lg p-4">
-              <summary className="font-medium cursor-pointer">可以随时取消订阅吗？</summary>
-              <p className="mt-2 text-muted-foreground">
-                是的，您可以随时取消订阅。取消后，您仍可以使用服务直到当前计费周期结束。
-              </p>
-            </details>
             <details className="border rounded-lg p-4">
               <summary className="font-medium cursor-pointer">支持哪些图片格式？</summary>
               <p className="mt-2 text-muted-foreground">
@@ -86,6 +80,12 @@ export default async function PricingPage() {
               <summary className="font-medium cursor-pointer">处理后的图片质量如何？</summary>
               <p className="mt-2 text-muted-foreground">
                 我们使用先进的AI算法，确保背景移除后的图片保持高质量，边缘清晰自然。
+              </p>
+            </details>
+            <details className="border rounded-lg p-4">
+              <summary className="font-medium cursor-pointer">可以查看处理记录吗？</summary>
+              <p className="mt-2 text-muted-foreground">
+                是的，您可以在历史记录页面查看所有处理过的图片。历史记录会保留3天，过期后将自动删除。
               </p>
             </details>
           </div>

@@ -23,9 +23,6 @@ export function AuthGuard({
 
   const { user, isInitAuth } = useAuthContext();
 
-  console.log(Boolean(user), isInitAuth);
-
-
   useEffect(() => {
     if (requireAuth && !user && isInitAuth) {
       router.push(redirectTo);

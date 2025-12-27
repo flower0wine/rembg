@@ -1,10 +1,9 @@
-import type { UserSubscription } from "@/lib/types";
+import type { Tables } from "@/lib/supabase/database.types";
 import type { ApiResponse } from "@/lib/types/http";
 import api from "../axios";
 
 interface SubscriptionStatusResponse {
-  subscription: UserSubscription;
-  token: string;
+  subscription: Tables<"user_subscriptions">;
 }
 
 interface UpgradeSubscriptionParams {
@@ -14,8 +13,7 @@ interface UpgradeSubscriptionParams {
 
 interface UpgradeSubscriptionResponse {
   success: boolean;
-  subscription: UserSubscription;
-  token: string;
+  subscription: Tables<"user_subscriptions">;
 }
 
 /**

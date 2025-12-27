@@ -124,8 +124,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 检查订阅是否过期（基于时间判断）
+    const now = dayjs();
+    const subscriptionEnd = dayjs(subscription.subscription_end_date);
+    const isExpired = now.isAfter(subscriptionEnd);
+
+    // 如果订阅已过期但 is_active 仍为 true，更新状态
+    if (isExpired && subscription.is_active) {
+      await supabase
+        .from("user_subscriptions")
+        .update({ is_active: false })
+        .eq("user_id", userId);
+
+      subscription.is_active = false;
+    }
+
     // 检查订阅是否激活
-    if (!subscription.is_active) {
+    if (!subscription.is_active || isExpired) {
       return NextResponse.json(
         { error: "订阅已过期，请续费" },
         { status: 403 }
