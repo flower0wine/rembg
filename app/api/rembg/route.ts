@@ -133,16 +133,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查文件大小限制
-    const fileSizeMB = originalFileSize / (1024 * 1024);
-    if (fileSizeMB > subscription.max_file_size_mb) {
+    const fileSizeKB = originalFileSize / 1024;
+    if (fileSizeKB > subscription.max_file_size_kb) {
       return NextResponse.json(
         {
           error: `文件大小超出限制`,
-          file_size_mb: fileSizeMB.toFixed(2),
-          max_file_size_mb: subscription.max_file_size_mb,
-          plan: subscription.plan
+          file_size_kb: fileSizeKB.toFixed(2),
+          max_file_size_kb: subscription.max_file_size_kb,
+          plan: subscription.plan,
         },
-        { status: 413 }
+        { status: 413 },
       );
     }
 

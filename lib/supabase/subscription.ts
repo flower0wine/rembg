@@ -28,7 +28,7 @@ async function getFreePlanConfig(supabase: SupabaseClient<Database>) {
  */
 async function createFreeSubscription(
   supabase: SupabaseClient<Database>,
-  userId: string
+  userId: string,
 ) {
   const config = await getFreePlanConfig(supabase);
 
@@ -40,10 +40,10 @@ async function createFreeSubscription(
       billing_period: "monthly",
       usage_count: 0,
       max_usage_limit: config.max_usage_limit,
-      max_file_size_mb: config.max_file_size_mb,
-      max_batch_size: config.max_batch_size,
-      has_api_access: config.has_api_access,
+      max_file_size_kb: config.max_file_size_kb,
+      max_concurrent: config.max_concurrent,
       has_priority_support: config.has_priority_support,
+      has_advanced_analytics: config.has_advanced_analytics,
       subscription_start_date: dayjs().toISOString(),
       subscription_end_date: dayjs().add(30, "month").toISOString(),
       is_active: true,

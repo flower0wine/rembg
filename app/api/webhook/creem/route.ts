@@ -36,7 +36,6 @@ async function grantAccess(userId: string, customerEmail: string) {
     const upsertData: TablesInsert<"user_subscriptions"> = {
       user_id: userId,
       plan: "pro" as SubscriptionPlan,
-      billing_period: "monthly" as BillingPeriod,
       ...limits,
       is_active: true,
       subscription_start_date: dayjs().toISOString(),
@@ -66,9 +65,9 @@ async function grantAccess(userId: string, customerEmail: string) {
       plan: subscription.plan,
       usageCount: subscription.usage_count,
       maxUsageLimit: subscription.max_usage_limit,
-      maxFileSizeMb: subscription.max_file_size_mb,
-      maxBatchSize: subscription.max_batch_size,
-      hasApiAccess: subscription.has_api_access,
+      maxFileSizeKb: subscription.max_file_size_kb,
+      maxConcurrent: subscription.max_concurrent,
+      hasPrioritySupport: subscription.has_priority_support,
     });
   }
   catch (error) {
@@ -96,7 +95,6 @@ async function revokeAccess(userId: string, customerEmail: string) {
     const upsertData: TablesInsert<"user_subscriptions"> = {
       user_id: userId,
       plan: "free" as SubscriptionPlan,
-      billing_period: "monthly" as BillingPeriod,
       ...limits,
       is_active: true,
       subscription_start_date: dayjs().toISOString(),

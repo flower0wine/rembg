@@ -57,9 +57,9 @@ export async function POST(request: Request) {
         plan: sub.plan,
         usageCount: sub.usage_count,
         maxUsageLimit: sub.max_usage_limit,
-        maxFileSizeMb: sub.max_file_size_mb,
-        maxBatchSize: sub.max_batch_size,
-        hasApiAccess: sub.has_api_access,
+        maxFileSizeKb: sub.max_file_size_kb,
+        maxConcurrent: sub.max_concurrent,
+        hasPrioritySupport: sub.has_priority_support,
       });
 
       return NextResponse.json({

@@ -1,7 +1,6 @@
 "use client";
 
-import type { SubscriptionPlan } from "@/lib/types";
-import type { PricingPlanData } from "@/lib/types/pricing";
+import type { Tables } from "@/lib/supabase/database.types";
 import { CreemCheckout } from "@creem_io/nextjs";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
@@ -17,12 +16,14 @@ import {
 import { cn } from "@/lib/utils";
 import { FeatureList } from "./feature-list";
 
-const projectId = process.env.NEXT_PUBLIC_CREEM_PROJECT_ID!;
+// Creem projectId 配置 - starter 和 pro 使用不同的 projectId
+const CREEM_PROJECT_IDS = {
+  starter: process.env.NEXT_PUBLIC_CREEM_STARTER_PROJECT_ID!,
+  pro: process.env.NEXT_PUBLIC_CREEM_PRO_PROJECT_ID!,
+} as const;
 
 export interface PricingCardProps {
-  plan: PricingPlanData;
-  billingPeriod: "monthly" | "annual";
-  onSelect: (planId: SubscriptionPlan) => void;
+  plan: Tables<"subscription_plans_config">;
   currentPlan?: string;
   userId?: string;
   index?: number;
@@ -77,26 +78,37 @@ function PlanBadge({ isCurrentPlan, isFeatured, index }: PlanBadgeProps) {
 
 export function PricingCard({
   plan,
-  billingPeriod,
-  onSelect,
   currentPlan,
   userId,
   index = 0,
 }: PricingCardProps) {
   const isCurrentPlan = currentPlan === plan.plan;
-  const isProPlan = plan.plan === "pro";
+  const isFreePlan = plan.plan === "free";
+  const isPaidPlan = plan.plan === "starter" || plan.plan === "pro";
 
-  const price = billingPeriod === "monthly" ? plan.monthlyPrice : plan.annualPrice;
-  const displayPrice = billingPeriod === "annual" ? price / 12 : price;
-  const isAnnualBilling = billingPeriod === "annual" && price > 0;
+  // 获取对应的 Creem projectId
+  const getCreemProjectId = () => {
+    if (plan.plan === "starter")
+      return CREEM_PROJECT_IDS.starter;
+    if (plan.plan === "pro")
+      return CREEM_PROJECT_IDS.pro;
+    return null;
+  };
+
+  const projectId = getCreemProjectId();
 
   const getButtonText = () => {
     if (isCurrentPlan)
       return "当前方案";
-    return plan.plan === "free" ? "Get Started" : "Upgrade Now";
+    if (isFreePlan)
+      return "Get Started";
+    return "Upgrade Now";
   };
 
-  const isButtonDisabled = isCurrentPlan || (!userId && isProPlan);
+  const isButtonDisabled = isCurrentPlan || (!userId && isPaidPlan);
+
+  // 解析 features_json
+  const features = (plan.features_json as string[]) || [];
 
   return (
     <motion.div
@@ -112,18 +124,18 @@ export function PricingCard({
       <Card
         className={cn(
           "relative flex flex-col transition-all hover:shadow-lg",
-          plan.isFeatured && "border-primary shadow-lg scale-105 hover:scale-[1.07]",
-          isCurrentPlan && !plan.isFeatured && "border-green-500",
+          plan.is_featured && "border-primary shadow-lg scale-105 hover:scale-[1.07]",
+          isCurrentPlan && !plan.is_featured && "border-green-500",
         )}
       >
         <PlanBadge
           isCurrentPlan={isCurrentPlan}
-          isFeatured={plan.isFeatured}
+          isFeatured={plan.is_featured}
           index={index}
         />
 
         <CardHeader>
-          <CardTitle className="text-2xl">{plan.displayName}</CardTitle>
+          <CardTitle className="text-2xl">{plan.display_name}</CardTitle>
           <CardDescription>{plan.description}</CardDescription>
         </CardHeader>
 
@@ -131,26 +143,19 @@ export function PricingCard({
           <div className="space-y-1">
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-bold">
-                $
-                {displayPrice.toFixed(0)}
+                {isFreePlan ? "Free" : `$${plan.plan === "starter" ? "9" : "19"}`}
               </span>
-              <span className="text-muted-foreground text-sm">/month</span>
+              {!isFreePlan && (
+                <span className="text-muted-foreground text-sm">/month</span>
+              )}
             </div>
-            {isAnnualBilling && (
-              <p className="text-xs text-muted-foreground">
-                Billed $
-                {price.toFixed(0)}
-                {" "}
-                annually
-              </p>
-            )}
           </div>
 
-          <FeatureList features={plan.features} />
+          <FeatureList features={features} />
         </CardContent>
 
         <CardFooter>
-          {isProPlan
+          {isPaidPlan && projectId
             ? (
                 <div className="[&>a]:w-full w-full">
                   <CreemCheckout
@@ -160,7 +165,7 @@ export function PricingCard({
                   >
                     <Button
                       className="w-full"
-                      variant={plan.isFeatured ? "default" : "outline"}
+                      variant={plan.is_featured ? "default" : "outline"}
                       disabled={isButtonDisabled}
                     >
                       {getButtonText()}
@@ -171,8 +176,7 @@ export function PricingCard({
             : (
                 <Button
                   className="w-full"
-                  variant={plan.isFeatured ? "default" : "outline"}
-                  onClick={() => onSelect(plan.plan)}
+                  variant={plan.is_featured ? "default" : "outline"}
                   disabled={isCurrentPlan}
                 >
                   {getButtonText()}

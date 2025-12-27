@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import type { Tables } from "@/lib/supabase/database.types";
-import type { PricingPlanData } from "@/lib/types/pricing";
 import { PricingSection } from "@/components/features/pricing/pricing-section";
 import { getVisiblePlans } from "@/lib/supabase/subscription-plans";
 
@@ -24,42 +22,9 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * 将数据库的定价配置转换为前端展示数据
- * 这样可以隐藏数据库结构，只暴露前端需要的字段
- */
-function transformPlanData(
-  dbPlan: Tables<"subscription_plans_config">,
-): PricingPlanData {
-  return {
-    id: dbPlan.id,
-    plan: dbPlan.plan,
-    displayName: dbPlan.display_name,
-    description: dbPlan.description || "",
-    monthlyPrice: dbPlan.monthly_price_cents / 100, // 转换为美元
-    annualPrice: dbPlan.annual_price_cents / 100, // 转换为美元
-    features: (dbPlan.features_json as string[]) || [],
-    isFeatured: dbPlan.is_featured,
-    limits: {
-      maxUsageLimit: dbPlan.max_usage_limit,
-      maxFileSize: dbPlan.max_file_size_mb,
-      maxBatchSize: dbPlan.max_batch_size,
-    },
-    capabilities: {
-      hasApiAccess: dbPlan.has_api_access,
-      hasPrioritySupport: dbPlan.has_priority_support,
-      hasAdvancedAnalytics: dbPlan.has_advanced_analytics,
-      hasCustomBranding: dbPlan.has_custom_branding,
-    },
-  };
-}
-
 export default async function PricingPage() {
-  // 从数据库获取定价配置
-  const dbPlans = await getVisiblePlans();
-
-  // 转换为前端数据格式
-  const plans: PricingPlanData[] = dbPlans.map(transformPlanData);
+  // 从数据库获取定价配置，直接使用数据表字段
+  const plans = await getVisiblePlans();
 
   // 生成结构化数据
   const structuredData = {
@@ -69,17 +34,16 @@ export default async function PricingPage() {
     "description": "使用AI技术快速移除图片背景的专业工具",
     "offers": plans.map(plan => ({
       "@type": "Offer",
-      "name": plan.displayName,
+      "name": plan.display_name,
       "description": plan.description,
-      "price": plan.monthlyPrice,
-      "priceCurrency": "USD",
+      "priceCurrency": plan.currency,
       "priceValidUntil": "2025-12-31",
       "availability": "https://schema.org/InStock",
       "seller": {
         "@type": "Organization",
-        "name": "背景移除工具"
-      }
-    }))
+        "name": "背景移除工具",
+      },
+    })),
   };
 
   return (

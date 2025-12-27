@@ -55,7 +55,6 @@ export interface Database {
       };
       subscription_plans_config: {
         Row: {
-          annual_price_cents: number;
           created_at: string;
           currency: string;
           description: string | null;
@@ -63,22 +62,18 @@ export interface Database {
           display_order: number;
           features_json: Json | null;
           has_advanced_analytics: boolean;
-          has_api_access: boolean;
-          has_custom_branding: boolean;
           has_priority_support: boolean;
           id: string;
           is_featured: boolean;
           is_visible: boolean;
-          max_batch_size: number;
-          max_file_size_mb: number;
+          max_concurrent: number;
+          max_file_size_kb: number;
           max_usage_limit: number;
           metadata: Json | null;
-          monthly_price_cents: number;
           plan: Database["public"]["Enums"]["subscription_plan"];
           updated_at: string;
         };
         Insert: {
-          annual_price_cents?: number;
           created_at?: string;
           currency?: string;
           description?: string | null;
@@ -86,22 +81,18 @@ export interface Database {
           display_order?: number;
           features_json?: Json | null;
           has_advanced_analytics?: boolean;
-          has_api_access?: boolean;
-          has_custom_branding?: boolean;
           has_priority_support?: boolean;
           id?: string;
           is_featured?: boolean;
           is_visible?: boolean;
-          max_batch_size: number;
-          max_file_size_mb: number;
+          max_concurrent: number;
+          max_file_size_kb: number;
           max_usage_limit: number;
           metadata?: Json | null;
-          monthly_price_cents?: number;
           plan: Database["public"]["Enums"]["subscription_plan"];
           updated_at?: string;
         };
         Update: {
-          annual_price_cents?: number;
           created_at?: string;
           currency?: string;
           description?: string | null;
@@ -109,40 +100,16 @@ export interface Database {
           display_order?: number;
           features_json?: Json | null;
           has_advanced_analytics?: boolean;
-          has_api_access?: boolean;
-          has_custom_branding?: boolean;
           has_priority_support?: boolean;
           id?: string;
           is_featured?: boolean;
           is_visible?: boolean;
-          max_batch_size?: number;
-          max_file_size_mb?: number;
+          max_concurrent?: number;
+          max_file_size_kb?: number;
           max_usage_limit?: number;
           metadata?: Json | null;
-          monthly_price_cents?: number;
           plan?: Database["public"]["Enums"]["subscription_plan"];
           updated_at?: string;
-        };
-        Relationships: [];
-      };
-      usage_records: {
-        Row: {
-          created_at: string;
-          fingerprint: string;
-          id: string;
-          user_id: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          fingerprint: string;
-          id?: string;
-          user_id?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          fingerprint?: string;
-          id?: string;
-          user_id?: string | null;
         };
         Relationships: [];
       };
@@ -181,14 +148,13 @@ export interface Database {
       };
       user_subscriptions: {
         Row: {
-          billing_period: string;
           created_at: string;
-          has_api_access: boolean;
+          has_advanced_analytics: boolean;
           has_priority_support: boolean;
           id: string;
           is_active: boolean;
-          max_batch_size: number;
-          max_file_size_mb: number;
+          max_concurrent: number;
+          max_file_size_kb: number;
           max_usage_limit: number;
           plan: Database["public"]["Enums"]["subscription_plan"];
           subscription_end_date: string;
@@ -198,14 +164,13 @@ export interface Database {
           user_id: string;
         };
         Insert: {
-          billing_period: string;
           created_at?: string;
-          has_api_access?: boolean;
+          has_advanced_analytics?: boolean;
           has_priority_support?: boolean;
           id?: string;
           is_active?: boolean;
-          max_batch_size?: number;
-          max_file_size_mb?: number;
+          max_concurrent?: number;
+          max_file_size_kb?: number;
           max_usage_limit: number;
           plan?: Database["public"]["Enums"]["subscription_plan"];
           subscription_end_date: string;
@@ -215,14 +180,13 @@ export interface Database {
           user_id: string;
         };
         Update: {
-          billing_period?: string;
           created_at?: string;
-          has_api_access?: boolean;
+          has_advanced_analytics?: boolean;
           has_priority_support?: boolean;
           id?: string;
           is_active?: boolean;
-          max_batch_size?: number;
-          max_file_size_mb?: number;
+          max_concurrent?: number;
+          max_file_size_kb?: number;
           max_usage_limit?: number;
           plan?: Database["public"]["Enums"]["subscription_plan"];
           subscription_end_date?: string;
@@ -238,26 +202,10 @@ export interface Database {
       [_ in never]: never
     };
     Functions: {
-      check_and_reserve_quota: {
-        Args: { p_user_id: string };
-        Returns: {
-          can_proceed: boolean;
-          max_usage_limit: number;
-          plan: Database["public"]["Enums"]["subscription_plan"];
-          usage_count: number;
-        }[];
-      };
       cleanup_expired_reservations: {
         Args: never;
         Returns: {
           cleaned_count: number;
-        }[];
-      };
-      confirm_usage: {
-        Args: { p_user_id: string };
-        Returns: {
-          max_usage_limit: number;
-          usage_count: number;
         }[];
       };
       confirm_usage_reservation: {
@@ -265,14 +213,6 @@ export interface Database {
         Returns: {
           new_usage_count: number;
           success: boolean;
-        }[];
-      };
-      increment_usage_count: {
-        Args: { p_max_limit: number; p_user_id: string };
-        Returns: {
-          max_usage_limit: number;
-          plan: Database["public"]["Enums"]["subscription_plan"];
-          usage_count: number;
         }[];
       };
       release_usage_reservation: {
@@ -293,7 +233,7 @@ export interface Database {
     };
     Enums: {
       processing_status_enum: "processing" | "completed" | "failed";
-      subscription_plan: "free" | "pro" | "enterprise";
+      subscription_plan: "free" | "starter" | "pro";
     };
     CompositeTypes: {
       [_ in never]: never
@@ -422,7 +362,7 @@ export const Constants = {
   public: {
     Enums: {
       processing_status_enum: ["processing", "completed", "failed"],
-      subscription_plan: ["free", "pro", "enterprise"],
+      subscription_plan: ["free", "starter", "pro"],
     },
   },
 } as const;

@@ -2,8 +2,8 @@
  * User and authentication related type definitions
  */
 
-export type SubscriptionPlan = "free" | "pro" | "enterprise";
-export type BillingPeriod = "monthly" | "annual";
+export type SubscriptionPlan = "free" | "starter" | "pro";
+export type BillingPeriod = "monthly";
 
 export interface User {
   id: string;
@@ -18,10 +18,10 @@ export interface UserSubscription {
   billing_period?: BillingPeriod;
   usage_count: number;
   max_usage_limit: number;
-  max_file_size_mb: number;
-  max_batch_size: number;
-  has_api_access: boolean;
+  max_file_size_kb: number;
+  max_concurrent: number;
   has_priority_support: boolean;
+  has_advanced_analytics: boolean;
   subscription_start_date: string;
   subscription_end_date?: string;
   is_active: boolean;
@@ -49,9 +49,9 @@ export interface JWTPayload {
   plan: SubscriptionPlan;
   usageCount: number;
   maxUsageLimit: number | null;
-  maxFileSizeMb: number;
-  maxBatchSize: number;
-  hasApiAccess: boolean;
+  maxFileSizeKb: number;
+  maxConcurrent: number;
+  hasPrioritySupport: boolean;
   iat?: number;
   exp?: number;
 }

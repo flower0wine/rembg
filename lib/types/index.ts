@@ -18,8 +18,5 @@ export * from "./error";
 // Landing page types
 export * from "./landing";
 
-// Pricing types
-export * from "./pricing";
-
 // User and auth types
 export * from "./user";

@@ -39,9 +39,9 @@ export async function GET() {
       plan: subscription.plan,
       usageCount: subscription.usage_count,
       maxUsageLimit: subscription.max_usage_limit,
-      maxFileSizeMb: subscription.max_file_size_mb,
-      maxBatchSize: subscription.max_batch_size,
-      hasApiAccess: subscription.has_api_access,
+      maxFileSizeKb: subscription.max_file_size_kb,
+      maxConcurrent: subscription.max_concurrent,
+      hasPrioritySupport: subscription.has_priority_support,
     });
 
     return NextResponse.json({
@@ -51,9 +51,9 @@ export async function GET() {
         plan: subscription.plan,
         usageCount: subscription.usage_count,
         maxUsageLimit: subscription.max_usage_limit,
-        maxFileSizeMb: subscription.max_file_size_mb,
-        maxBatchSize: subscription.max_batch_size,
-        hasApiAccess: subscription.has_api_access,
+        maxFileSizeKb: subscription.max_file_size_kb,
+        maxConcurrent: subscription.max_concurrent,
+        hasPrioritySupport: subscription.has_priority_support,
       },
       token,
     });

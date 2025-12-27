@@ -8,13 +8,9 @@ import { generateToken } from "@/lib/utils/jwt";
 
 export async function POST(request: Request) {
   try {
-    const { plan, billingPeriod } = await request.json();
+    const { plan } = await request.json();
 
-    if (!plan
-      || !["free", "pro", "enterprise"].includes(plan)
-      || !billingPeriod
-      || !["monthly", "annual"].includes(billingPeriod)
-    ) {
+    if (!plan || !["free", "starter", "pro"].includes(plan)) {
       return NextResponse.json(
         { error: "Invalid plan" },
         { status: 400 },
@@ -34,19 +30,16 @@ export async function POST(request: Request) {
     // Fetch plan limits from database (single source of truth)
     const limits = await getPlanLimits(plan as SubscriptionPlan);
 
-    // Calculate end date based on billing period
-    const endDate = billingPeriod === "annual"
-      ? dayjs().add(1, "year").toISOString()
-      : dayjs().add(1, "month").toISOString();
+    // Calculate end date (1 month for monthly billing)
+    const endDate = dayjs().add(1, "month").toISOString();
 
     const upsertData: TablesInsert<"user_subscriptions"> = {
       user_id: user.id,
       plan: plan as SubscriptionPlan,
-      billing_period: billingPeriod as BillingPeriod,
       ...limits,
       is_active: true,
       subscription_start_date: dayjs().toISOString(),
-      subscription_end_date: endDate
+      subscription_end_date: endDate,
     };
 
     const { data: subscription, error: subError } = await supabase
@@ -80,9 +73,9 @@ export async function POST(request: Request) {
       plan: sub.plan,
       usageCount: sub.usage_count,
       maxUsageLimit: sub.max_usage_limit,
-      maxFileSizeMb: sub.max_file_size_mb,
-      maxBatchSize: sub.max_batch_size,
-      hasApiAccess: sub.has_api_access,
+      maxFileSizeKb: sub.max_file_size_kb,
+      maxConcurrent: sub.max_concurrent,
+      hasPrioritySupport: sub.has_priority_support,
     });
 
     return NextResponse.json({

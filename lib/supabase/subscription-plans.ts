@@ -55,9 +55,9 @@ export async function getPlanLimits(plan: SubscriptionPlan) {
 
   return {
     max_usage_limit: config.max_usage_limit,
-    max_file_size_mb: config.max_file_size_mb,
-    max_batch_size: config.max_batch_size,
-    has_api_access: config.has_api_access,
+    max_file_size_kb: config.max_file_size_kb,
+    max_concurrent: config.max_concurrent,
     has_priority_support: config.has_priority_support,
+    has_advanced_analytics: config.has_advanced_analytics,
   };
 }

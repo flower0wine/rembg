@@ -1,0 +1,1 @@
+ALTER DATABASE postgres SET search_path TO public, auth, extensions;
