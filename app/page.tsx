@@ -19,17 +19,21 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
-      <HeroSection
-        title="一键移除图片背景"
-        subtitle="使用AI技术快速移除图片背景，支持单张和批量处理。无需专业技能，简单易用，效果专业。"
-        ctaText="免费开始"
-        ctaHref={ROUTES.APP}
-      />
-      <HowItWorks />
-      <ExamplesSection />
-      <Testimonials />
+    <>
+      <main className="min-h-screen">
+        <div className="max-w-5xl mx-auto">
+          <HeroSection
+            title="一键移除图片背景"
+            subtitle="使用AI技术快速移除图片背景，支持单张和批量处理。无需专业技能，简单易用，效果专业。"
+            ctaText="免费开始"
+            ctaHref={ROUTES.APP}
+          />
+          <ExamplesSection />
+          <HowItWorks />
+          <Testimonials />
+        </div>
+      </main>
       <CTASection />
-    </main>
+    </>
   );
 }

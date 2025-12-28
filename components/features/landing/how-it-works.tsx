@@ -33,7 +33,7 @@ const steps: Step[] = [
     number: 4,
     icon: <Download className="h-8 w-8" />,
     title: "下载保存",
-    description: "下载透明背景的PNG图片，支持单张或批量下载",
+    description: "下载透明背景的PNG图片",
   },
 ];
 

@@ -29,7 +29,7 @@ export function SpotlightCard({
   spotlightColor = "rgba(255,255,255,0.06)",
   borderGlowColor = "rgba(255,255,255,0.1)",
   showBorderGlow = true,
-  as = "div",
+  as = "motion",
   ...props
 }: SpotlightCardProps & React.ComponentProps<typeof motion.div>) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -68,11 +68,10 @@ export function SpotlightCard({
     onMouseMove: handleMouseMove,
     onMouseEnter: () => setIsHovering(true),
     onMouseLeave: () => setIsHovering(false),
-    className: cn("relative overflow-hidden", className),
   };
 
   const content = (
-    <motion.div {...commonProps} {...props} className={className}>
+    <motion.div {...commonProps} {...props} className={cn("relative overflow-hidden", className)}>
       {/* Spotlight Effect */}
       <motion.div
         className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300"

@@ -8,11 +8,11 @@ import { ROUTES } from "@/lib/constants/routes";
 
 export function CTASection() {
   return (
-    <section className="relative overflow-hidden bg-linear-to-br from-primary/10 via-background to-accent/10 px-4 py-20">
+    <section className="relative overflow-hidden bg-linear-to-br from-primary/15 via-background to-accent/20 px-4 py-20">
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute left-1/3 top-1/3 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute right-1/3 bottom-1/3 h-96 w-96 rounded-full bg-accent/20 blur-3xl" />
+        <div className="absolute left-1/3 top-1/3 h-96 w-96 rounded-full bg-primary/25 blur-3xl" />
+        <div className="absolute right-1/3 bottom-1/3 h-96 w-96 rounded-full bg-primary/25 blur-3xl" />
       </div>
 
       <div className="container mx-auto max-w-4xl">

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Quote, Star } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 interface Testimonial {
   name: string;
@@ -83,10 +84,10 @@ export function Testimonials() {
           className="grid gap-8 md:grid-cols-3"
         >
           {testimonials.map((testimonial, index) => (
-            <motion.div
+            <SpotlightCard
               key={index}
               variants={itemVariants}
-              className="relative rounded-lg border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md"
+              className="relative rounded-lg border border-border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:ring-1 hover:ring-primary/40"
             >
               {/* Quote Icon */}
               <div className="mb-4 text-primary/20">
@@ -126,7 +127,7 @@ export function Testimonials() {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </SpotlightCard>
           ))}
         </motion.div>
       </div>

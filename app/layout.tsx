@@ -50,7 +50,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body>
+      <body className="bg-background">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
