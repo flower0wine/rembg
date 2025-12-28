@@ -3,7 +3,7 @@
  */
 
 export enum ImageStatus {
-  Uploading = "uploading",
+  Verify = "verify",
   Processing = "processing",
   Completed = "completed",
   Error = "error",

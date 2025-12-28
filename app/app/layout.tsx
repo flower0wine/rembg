@@ -19,14 +19,14 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <OverflowHidden>
-      <FullscreenDropProvider>
-        <FullscreenDropZone>
-          <div className="h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] flex flex-col overflow-hidden">
-            <main className="flex-1 flex flex-col overflow-auto">{children}</main>
-          </div>
-        </FullscreenDropZone>
-      </FullscreenDropProvider>
-    </OverflowHidden>
+    // <OverflowHidden>
+    <FullscreenDropProvider>
+      <FullscreenDropZone>
+        <div className="h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+          <main className="flex-1 flex flex-col overflow-auto">{children}</main>
+        </div>
+      </FullscreenDropZone>
+    </FullscreenDropProvider>
+    // </OverflowHidden>
   );
 }

@@ -103,18 +103,23 @@ export function RembgWorkspace() {
     }
   };
 
-  const handleVerify = (newToken: string) => {
-    setTurnstileToken(newToken);
-    setShowTurnstile(false);
-
+  const processPendingTask = (token: string) => {
     // Token 获取后，处理所有待处理的任务
     if (pendingTasks.length > 0) {
       pendingTasks.forEach((task) => {
-        processImageWithToken(task.id, task.file, newToken);
+        processImageWithToken(task.id, task.file, token);
       });
       setPendingTasks([]);
     }
   };
+
+  const handleVerify = (newToken: string) => {
+    setTurnstileToken(newToken);
+    setShowTurnstile(false);
+  };
+
+  console.log(turnstileToken);
+
 
   // 处理图片背景移除（入口函数）
   const processImage = async (id: string, file: File) => {
@@ -127,7 +132,7 @@ export function RembgWorkspace() {
       updateImage({
         id,
         updates: {
-          status: ImageStatus.Uploading,
+          status: ImageStatus.Verify,
           progress: 10,
         }
       });
@@ -158,7 +163,7 @@ export function RembgWorkspace() {
         id: uuidv4(),
         originImageFile: file,
         originImageUrl: URL.createObjectURL(file),
-        status: ImageStatus.Uploading,
+        status: ImageStatus.Verify,
         progress: 0,
       };
 
@@ -203,6 +208,13 @@ export function RembgWorkspace() {
     return theme === "dark" ? "dark" : "light";
   };
 
+  useEffect(() => {
+    if (!turnstileToken) {
+      return;
+    }
+    processPendingTask(turnstileToken);
+  }, [turnstileToken]);
+
   return (
     <FullscreenDropProvider
       value={{
@@ -246,7 +258,7 @@ export function RembgWorkspace() {
                       onVerify={handleVerify}
                       onError={handleError}
                       onExpire={handleExpire}
-                      sandbox={process.env.NODE_ENV === "development"}
+                      // sandbox={process.env.NODE_ENV === "development"}
                       theme={getTurnstileTheme()}
                       size="normal"
                       appearance="interaction-only"

@@ -31,7 +31,7 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <Image
-            src="/rembg.png"
+            src="/logo/rembg-64.png"
             alt="背景移除"
             width={32}
             height={32}

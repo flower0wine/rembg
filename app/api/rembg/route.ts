@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const result = await validateTurnstileToken({
       token: turnstileToken,
       secretKey: turnstileSecret,
-      sandbox: process.env.NODE_ENV === "development",
+      // sandbox: process.env.NODE_ENV === "development",
       remoteip: userIp,
     });
 

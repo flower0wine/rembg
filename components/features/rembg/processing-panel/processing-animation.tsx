@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { ImageStatus } from "../types";
 
 interface ProcessingAnimationProps {
-  status: "uploading" | "processing";
+  status: ImageStatus;
 }
 
 export function ProcessingAnimation({ status }: ProcessingAnimationProps) {
@@ -135,7 +136,8 @@ export function ProcessingAnimation({ status }: ProcessingAnimationProps) {
             ease: "easeInOut",
           }}
         >
-          {status === "uploading" ? "上传中..." : "处理中..."}
+          {status === ImageStatus.Verify && "验证请求中..."}
+          {status === ImageStatus.Processing && "处理中..."}
         </motion.p>
       </motion.div>
     </div>

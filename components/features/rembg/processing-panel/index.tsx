@@ -5,9 +5,9 @@
  */
 
 import type { ImageItem } from "../types";
-import { motion } from "framer-motion";
 import { ImageViewer } from "@/components/ui/image-viewer";
 import { cn } from "@/lib/utils";
+import { ImageStatus } from "../types";
 import { CompletionAnimation } from "./completion-animation";
 import { ErrorDisplay } from "./error-display";
 import { ProcessingAnimation } from "./processing-animation";
@@ -19,14 +19,15 @@ interface ProcessingPanelProps {
 }
 
 export function ProcessingPanel({ image, className }: ProcessingPanelProps) {
-  const isProcessing = image.status === "processing" || image.status === "uploading";
-  const isCompleted = image.status === "completed";
-  const isError = image.status === "error";
+  const isProcessing = image.status === ImageStatus.Processing;
+  const isCompleted = image.status === ImageStatus.Completed;
+  const isVerify = image.status === ImageStatus.Verify;
+  const isError = image.status === ImageStatus.Error;
 
   return (
     <div
       className={cn(
-        "relative rounded-2xl overflow-hidden h-150",
+        "relative rounded-2xl overflow-hidden w-full sm:h-150 sm:w-auto",
         className
       )}
     >
@@ -41,8 +42,8 @@ export function ProcessingPanel({ image, className }: ProcessingPanelProps) {
 
 
       {/* 处理中动效 */}
-      {isProcessing && (
-        <ProcessingAnimation status={image.status as "uploading" | "processing"} />
+      {(isProcessing || isVerify) && (
+        <ProcessingAnimation status={image.status} />
       )}
 
       {/* 完成动效 */}
@@ -52,7 +53,7 @@ export function ProcessingPanel({ image, className }: ProcessingPanelProps) {
       {isError && <ErrorDisplay message={image.error?.message} />}
 
       {/* 进度指示器 */}
-      {isProcessing && <ProgressBar progress={image.progress} />}
+      {(isProcessing || isVerify) && <ProgressBar progress={image.progress} />}
     </div>
   );
 }
