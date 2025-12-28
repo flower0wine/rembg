@@ -60,7 +60,7 @@ function ImageViewer({
             <motion.div
               key="compare-mode"
               className={cn(
-                "relative w-full",
+                "relative",
                 showCheckeredBackground && "checkered-background",
                 className
               )}

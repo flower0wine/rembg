@@ -10,7 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useTheme } from "next-themes";
 import { Turnstile } from "next-turnstile";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
@@ -214,20 +214,20 @@ export function RembgWorkspace() {
         onFilesSelected={handleFilesSelected}
         onError={handleUploadError}
       >
-        <div className="w-full">
+        <div className="flex flex-col items-center gap-4 w-full">
           {/* 主面板区域 */}
-          <div className="w-full ">
-            {selectedImage
-              ? (
-                  <ProcessingPanel image={selectedImage} />
-                )
-              : (
+          {selectedImage
+            ? (
+                <ProcessingPanel image={selectedImage} />
+              )
+            : (
+                <div className="w-full">
                   <UploadPanel
                     onFilesSelected={handleFilesSelected}
                     onError={handleUploadError}
                   />
-                )}
-          </div>
+                </div>
+              )}
 
           {/* Turnstile 验证组件 */}
           <div className="relative h-0 pointer-events-none z-999">
@@ -260,6 +260,7 @@ export function RembgWorkspace() {
           {/* 缩略图列表 */}
           {images.length > 0 && (
             <ThumbnailList
+              className="flex-1 min-w-20 w-full"
               images={images}
               selectedId={selectedId}
               onSelect={setSelectedId}

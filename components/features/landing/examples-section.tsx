@@ -97,13 +97,10 @@ export function ExamplesSection() {
                 }}
                 className={cn(
                   "rounded-xl overflow-hidden bg-background shadow-lg",
-                  "border border-border"
+                  "border-2 border-input"
                 )}
               >
-                <div className="p-4 border-b border-border">
-                  <h3 className="font-semibold text-lg">{category.label}</h3>
-                </div>
-                <div className="p-4">
+                <div className="border">
                   <ImageViewer
                     defaultDimensions={{ width: 16, height: 9 }}
                     imageOne={`${imageDomain}${category.afterImage}`}

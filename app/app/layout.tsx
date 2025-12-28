@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FullscreenDropZone } from "@/components/features/rembg";
+import OverflowHidden from "@/components/features/rembg/overflow-hidden";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
 
 export const metadata: Metadata = {
@@ -18,12 +19,14 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <FullscreenDropProvider>
-      <FullscreenDropZone>
-        <div className="h-screen flex flex-col overflow-hidden">
-          <main className="flex-1 flex flex-col overflow-auto">{children}</main>
-        </div>
-      </FullscreenDropZone>
-    </FullscreenDropProvider>
+    <OverflowHidden>
+      <FullscreenDropProvider>
+        <FullscreenDropZone>
+          <div className="h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+            <main className="flex-1 flex flex-col overflow-auto">{children}</main>
+          </div>
+        </FullscreenDropZone>
+      </FullscreenDropProvider>
+    </OverflowHidden>
   );
 }

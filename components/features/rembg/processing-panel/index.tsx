@@ -26,12 +26,12 @@ export function ProcessingPanel({ image, className }: ProcessingPanelProps) {
   return (
     <div
       className={cn(
-        "relative w-full rounded-xl overflow-hidden",
+        "relative rounded-2xl overflow-hidden h-150",
         className
       )}
     >
       <ImageViewer
-        className={cn(isProcessing && "opacity-40 blur-sm")}
+        className={cn(" h-full", isProcessing && "opacity-40 blur-sm")}
         imageOne={image.processedImageUrl}
         imageTwo={image.originImageUrl}
         imageOneAlt={`${image.originImageFile.name}-original`}

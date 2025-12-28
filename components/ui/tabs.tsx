@@ -11,7 +11,6 @@ interface TabsContextValue {
   activeTab: string;
   layoutId: string;
   listRef: React.RefObject<HTMLDivElement | null>;
-  scrollToCenter: (element: HTMLElement) => void;
 }
 
 const TabsContext = React.createContext<TabsContextValue | null>(null);
@@ -37,24 +36,6 @@ function Tabs({
     }
   }, [value]);
 
-  const scrollToCenter = React.useCallback((element: HTMLElement) => {
-    const container = listRef.current;
-    if (!container)
-      return;
-
-    const containerRect = container.getBoundingClientRect();
-    const elementRect = element.getBoundingClientRect();
-
-    // 计算元素相对于容器的位置
-    const elementCenter = elementRect.left + elementRect.width / 2;
-    const containerCenter = containerRect.left + containerRect.width / 2;
-    const scrollOffset = elementCenter - containerCenter;
-
-    container.scrollBy({
-      left: scrollOffset,
-      behavior: "smooth",
-    });
-  }, []);
 
   const handleValueChange = (newValue: string) => {
     setActiveTab(newValue);
@@ -62,7 +43,7 @@ function Tabs({
   };
 
   return (
-    <TabsContext.Provider value={{ activeTab, layoutId, listRef, scrollToCenter }}>
+    <TabsContext.Provider value={{ activeTab, layoutId, listRef }}>
       <TabsPrimitive.Root
         data-slot="tabs"
         className={cn("flex flex-col gap-2", className)}
@@ -112,9 +93,11 @@ function TabsTrigger({
   const triggerRef = React.useRef<HTMLButtonElement>(null);
 
   const handleClick = () => {
-    if (triggerRef.current && context?.scrollToCenter) {
-      context.scrollToCenter(triggerRef.current);
-    }
+    triggerRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center"
+    });
   };
 
   return (

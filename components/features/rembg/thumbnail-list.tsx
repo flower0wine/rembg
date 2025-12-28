@@ -8,6 +8,7 @@ import type { ImageItem } from "./types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Download, Link2, MoreVertical, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
+import { useMap } from "react-use";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ interface ThumbnailListProps {
   onSelect: (id: string) => void;
   onRemove: (id: string) => void;
   onAddMore: (files: File[]) => void;
+  itemClassName?: string;
   className?: string;
 }
 
@@ -36,7 +38,10 @@ export function ThumbnailList({
   onRemove,
   onAddMore,
   className,
+  itemClassName,
 }: ThumbnailListProps) {
+  const [map, { set, get, remove }] = useMap();
+
   const { inputRef, openFileDialog, onFilesSelected } = useImageFileInput(
     (files) => {
       if (files && files.length > 0) {
@@ -45,6 +50,15 @@ export function ThumbnailList({
       }
     }
   );
+
+  const handleSelect = (id: string) => {
+    onSelect(id);
+    get(id)?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center"
+    });
+  };
 
   if (images.length === 0)
     return null;
@@ -55,9 +69,11 @@ export function ThumbnailList({
     }
   };
 
+  const defaultItemClassName = "size-20 rounded-2xl";
+
   return (
     <motion.div
-      className={cn("flex gap-3", className)}
+      className={cn("flex gap-3 justify-center", className)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -69,6 +85,7 @@ export function ThumbnailList({
             {images.map((image, index) => (
               <motion.div
                 key={image.id}
+                ref={el => set(image.id, el)}
                 className="relative group shrink-0"
                 initial={{ opacity: 0, scale: 0.8, x: -20 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -81,12 +98,14 @@ export function ThumbnailList({
               >
                 {/* 缩略图 */}
                 <motion.button
-                  onClick={() => onSelect(image.id)}
+                  onClick={() => handleSelect(image.id)}
                   className={cn(
-                    "relative size-20 rounded-lg overflow-hidden border-2 transition-all",
+                    "relative overflow-hidden border-2 transition-all",
                     selectedId === image.id
                       ? "border-primary ring-2 ring-primary/20"
-                      : "border-transparent hover:border-primary/50"
+                      : "border-transparent hover:border-primary/50",
+                    defaultItemClassName,
+                    itemClassName,
                   )}
                 >
                   {/* 背景光晕 */}
@@ -111,12 +130,12 @@ export function ThumbnailList({
                   {/* 状态指示器 */}
                   {image.status === "processing" && (
                     <motion.div
-                      className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[1px]"
+                      className="absolute inset-0 bg-background/50 flex items-center justify-center backdrop-blur-[1px]"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                     >
                       <motion.div
-                        className="size-5 border-2 border-white/30 border-t-white rounded-full"
+                        className="size-5 border-2 border-border/30 border-t-foreground rounded-full"
                         animate={{ rotate: 360 }}
                         transition={{
                           duration: 1,
@@ -151,13 +170,13 @@ export function ThumbnailList({
                   {/* 完成状态的勾选标记 */}
                   {image.status === "completed" && (
                     <motion.div
-                      className="absolute bottom-1 right-1 size-5 rounded-full bg-primary flex items-center justify-center"
+                      className="absolute bottom-1 right-1 size-5 rounded-full bg-background flex items-center justify-center"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ delay: 0.2, type: "spring" }}
                     >
                       <svg
-                        className="size-3 text-white"
+                        className="size-3 text-foreground"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -219,6 +238,7 @@ export function ThumbnailList({
                           onClick={(e) => {
                             e.stopPropagation();
                             onRemove(image.id);
+                            remove(image.id);
                           }}
                           className="text-destructive focus:text-destructive"
                         >
@@ -246,7 +266,7 @@ export function ThumbnailList({
           onClick={openFileDialog}
           variant="outline"
           size="icon"
-          className="shrink-0 size-20 rounded-lg relative overflow-hidden group"
+          className={cn("shrink-0 relative overflow-hidden group", defaultItemClassName, itemClassName)}
         >
           <motion.div
             className="absolute inset-0 bg-primary/5"

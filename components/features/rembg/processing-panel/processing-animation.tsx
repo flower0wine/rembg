@@ -8,7 +8,7 @@ interface ProcessingAnimationProps {
 
 export function ProcessingAnimation({ status }: ProcessingAnimationProps) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center backdrop-blur-[2px]">
+    <div className="absolute inset-0 flex items-center justify-center bg-background/30 backdrop-blur-[2px]">
       <motion.div
         className="relative"
         initial={{ opacity: 0, scale: 0.8 }}
@@ -121,7 +121,7 @@ export function ProcessingAnimation({ status }: ProcessingAnimationProps) {
 
       {/* 处理状态文字 */}
       <motion.div
-        className="absolute bottom-1/3 left-1/2 -translate-x-1/2 text-center"
+        className="absolute bottom-1/4 left-1/2 -translate-x-1/2 text-center"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
