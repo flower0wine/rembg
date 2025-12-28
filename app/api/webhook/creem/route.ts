@@ -61,9 +61,6 @@ async function grantAccess(userId: string, customerEmail: string, plan: Enums<"s
       usage_count: 0, // Reset usage count on upgrade
     };
 
-    console.log("升级用户为", plan);
-
-
     const { data: subscription, error: subError } = await supabase
       .from("user_subscriptions")
       .upsert(upsertData, {
@@ -128,8 +125,6 @@ export const POST = Webhook({
   webhookSecret: WEBHOOK_SECRET,
 
   onCheckoutCompleted: async ({ customer, product, metadata }) => {
-    console.log("onCheckoutCompleted", customer, product, metadata);
-
     // 如果 onGrantAccess 没有被触发，我们在这里也尝试处理订阅激活
     if (customer && metadata?.referenceId && product?.id) {
       const userId = metadata.referenceId as string;

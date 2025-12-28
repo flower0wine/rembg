@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
   const fileSize = request.headers.get("X-Original-File-Size");
 
   if (!fileSize || isNaN(Number(fileSize))) {
+    console.error("未提供文件大小");
     return NextResponse.json(
       { error: "请提供文件大小" },
       { status: 400 }
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
   const originalFileSize = Number(fileSize);
 
   if (!originalFilename || !contentType) {
+    console.error("未提供文件名");
     return NextResponse.json(
       { error: "请提供文件名" },
       { status: 400 }
@@ -47,6 +49,7 @@ export async function POST(request: NextRequest) {
   const fileExtension = getFileExtension(originalFilename);
 
   if (!["jpg", "jpeg", "png", "webp"].includes(fileExtension)) {
+    console.error(`不支持的文件类型: ${fileExtension}`);
     return NextResponse.json(
       { error: "不支持的文件类型" },
       { status: 400 }
@@ -54,6 +57,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!request.body) {
+    console.error("未提供图片数据");
     return NextResponse.json(
       { error: "未提供图片数据" },
       { status: 400 }
@@ -65,6 +69,7 @@ export async function POST(request: NextRequest) {
     const turnstileToken = request.headers.get("X-Turnstile-Token");
 
     if (!turnstileToken) {
+      console.error("未提供验证令牌");
       return NextResponse.json(
         { error: "验证失败" },
         { status: 400 }
@@ -89,6 +94,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.success) {
+      console.error("验证失败:", result);
       return NextResponse.json(
         { error: "验证失败，请重试" },
         { status: 403 }
@@ -102,6 +108,7 @@ export async function POST(request: NextRequest) {
     const user = data?.claims;
 
     if (authError || !user) {
+      console.error("未授权：请先登录");
       return NextResponse.json(
         { error: "未授权：请先登录" },
         { status: 401 }
@@ -141,6 +148,7 @@ export async function POST(request: NextRequest) {
 
     // 检查订阅是否激活
     if (!subscription.is_active || isExpired) {
+      console.error("订阅已过期，请续费");
       return NextResponse.json(
         { error: "订阅已过期，请续费" },
         { status: 403 }
@@ -150,6 +158,7 @@ export async function POST(request: NextRequest) {
     // 检查文件大小限制
     const fileSizeKB = originalFileSize / 1024;
     if (fileSizeKB > subscription.max_file_size_kb) {
+      console.error(`文件大小超出限制: ${fileSizeKB.toFixed(2)} KB > ${subscription.max_file_size_kb} KB`);
       return NextResponse.json(
         {
           error: `文件大小超出限制`,
@@ -172,6 +181,7 @@ export async function POST(request: NextRequest) {
       console.error("[rembg] 预留额度失败:", reserveError);
 
       if (reserveError.message?.includes("quota_exceeded")) {
+        console.error("预留额度失败: 已达到使用额度上限");
         return NextResponse.json(
           {
             error: "已达到使用额度上限",
@@ -184,12 +194,14 @@ export async function POST(request: NextRequest) {
       }
 
       if (reserveError.message?.includes("subscription_inactive")) {
+        console.error("预留额度失败: 订阅已过期");
         return NextResponse.json(
           { error: "订阅已过期，请续费" },
           { status: 403 }
         );
       }
 
+      console.error("预留额度失败:", reserveError);
       return NextResponse.json(
         { error: "无法预留额度" },
         { status: 500 }
@@ -197,6 +209,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!reservation || reservation.length === 0) {
+      console.error("预留额度失败: 未获取到预留ID");
       return NextResponse.json(
         { error: "预留额度失败" },
         { status: 500 }
@@ -257,6 +270,7 @@ export async function POST(request: NextRequest) {
           processing_time_ms: dayjs().diff(startTime),
         }).catch(console.error);
       }
+      console.error("云端服务处理图片服务错误:", response.status);
 
       // 释放预留
       await supabase.rpc("release_usage_reservation", {

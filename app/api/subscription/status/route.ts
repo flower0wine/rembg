@@ -10,6 +10,7 @@ export async function GET() {
     const user = data?.claims;
 
     if (authError || !user) {
+      console.error("Unauthorized:", authError);
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 },

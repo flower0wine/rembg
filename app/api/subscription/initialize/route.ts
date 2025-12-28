@@ -19,6 +19,7 @@ export async function POST() {
     const user = data?.claims;
 
     if (authError || !user) {
+      console.error("未授权访问:", authError);
       return NextResponse.json(
         { error: "未授权访问" },
         { status: 401 }
@@ -70,6 +71,7 @@ export async function GET() {
     const user = data?.claims;
 
     if (authError || !user) {
+      console.error("未授权访问:", authError);
       return NextResponse.json(
         { error: "未授权访问" },
         { status: 401 }

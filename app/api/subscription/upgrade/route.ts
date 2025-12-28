@@ -9,6 +9,7 @@ export async function POST(request: Request) {
     const { plan } = await request.json();
 
     if (!plan || !["free", "starter", "pro"].includes(plan)) {
+      console.error("Invalid plan:", plan);
       return NextResponse.json(
         { error: "Invalid plan" },
         { status: 400 },
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.error("Unauthorized:", authError);
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 },
@@ -57,6 +59,7 @@ export async function POST(request: Request) {
     }
 
     if (!subscription) {
+      console.error("Failed to create subscription:", subError);
       return NextResponse.json(
         { error: "Failed to create subscription" },
         { status: 500 },
