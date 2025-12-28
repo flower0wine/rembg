@@ -7,9 +7,14 @@ import { Upload } from "@aws-sdk/lib-storage";
 import { r2Client } from "@/lib/utils/r2";
 
 const bucket = process.env.R2_BUCKET_NAME!;
+const imageDomain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN!;
 
 if (!bucket) {
   throw new Error("R2_BUCKET_NAME environment variable is missing");
+}
+
+if (!imageDomain) {
+  throw new Error("NEXT_PUBLIC_R2_PUBLIC_DOMAIN environment variable is missing");
 }
 
 /**
@@ -45,7 +50,7 @@ export async function uploadImageToR2(
 
     await upload.done();
 
-    return `${process.env.R2_PUBLIC_DOMAIN}/${key}`;
+    return `${imageDomain}/${key}`;
   }
   catch (error) {
     console.error("上传图片到R2失败:", error);

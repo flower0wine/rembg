@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { CTASection } from "@/components/features/landing/cta-section";
+import { ExamplesSection } from "@/components/features/landing/examples-section";
 import { FeaturesSection } from "@/components/features/landing/features-section";
 import { HeroSection } from "@/components/features/landing/hero-section";
 import { HowItWorks } from "@/components/features/landing/how-it-works";
 import { Testimonials } from "@/components/features/landing/testimonials";
-import { Header } from "@/components/layout/header";
 import { ROUTES } from "@/lib/constants/routes";
 
 export const metadata: Metadata = {
@@ -26,8 +26,8 @@ export default function Home() {
         ctaText="免费开始"
         ctaHref={ROUTES.APP}
       />
-      <FeaturesSection features={[]} />
       <HowItWorks />
+      <ExamplesSection />
       <Testimonials />
       <CTASection />
     </main>

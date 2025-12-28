@@ -83,6 +83,7 @@
     "prettier-eslint": "^16.4.2",
     "simple-git-hooks": "^2.13.1",
     "supabase": "^2.67.3",
+    "tailwind-scrollbar-hide": "^4.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
