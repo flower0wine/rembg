@@ -6,6 +6,7 @@ export enum ImageStatus {
   Verify = "verify",
   Processing = "processing",
   Completed = "completed",
+  Waiting = "waiting",
   Error = "error",
 }
 

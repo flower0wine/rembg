@@ -19,9 +19,8 @@ interface ProcessingPanelProps {
 }
 
 export function ProcessingPanel({ image, className }: ProcessingPanelProps) {
-  const isProcessing = image.status === ImageStatus.Processing;
+  const isProcessing = image.status === ImageStatus.Processing || image.status === ImageStatus.Waiting || image.status === ImageStatus.Verify;
   const isCompleted = image.status === ImageStatus.Completed;
-  const isVerify = image.status === ImageStatus.Verify;
   const isError = image.status === ImageStatus.Error;
 
   return (
@@ -42,7 +41,7 @@ export function ProcessingPanel({ image, className }: ProcessingPanelProps) {
 
 
       {/* 处理中动效 */}
-      {(isProcessing || isVerify) && (
+      {(isProcessing) && (
         <ProcessingAnimation status={image.status} />
       )}
 
@@ -53,7 +52,7 @@ export function ProcessingPanel({ image, className }: ProcessingPanelProps) {
       {isError && <ErrorDisplay message={image.error?.message} />}
 
       {/* 进度指示器 */}
-      {(isProcessing || isVerify) && <ProgressBar progress={image.progress} />}
+      {(isProcessing) && <ProgressBar progress={image.progress} />}
     </div>
   );
 }

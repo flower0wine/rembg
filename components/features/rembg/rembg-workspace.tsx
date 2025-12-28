@@ -4,13 +4,14 @@
  * 背景移除工作区主组件
  */
 
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import type { ImageItem, UploadError } from "./types";
-import { AxiosError, isAxiosError } from "axios";
+import { Turnstile } from "@marsidev/react-turnstile";
+import { isAxiosError } from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useTheme } from "next-themes";
-import { Turnstile } from "next-turnstile";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { FullscreenDropProvider } from "@/components/providers/fullscreen-drop-provider";
@@ -39,6 +40,9 @@ export function RembgWorkspace() {
   const addImages = useSetAtom(addImagesAtom);
   const removeImage = useSetAtom(removeImageAtom);
   const updateImage = useSetAtom(updateImageAtom);
+
+  const turnstileRef = useRef<TurnstileInstance>(null);
+  const [isFetchingTurnstileToken, setIsFetchingTurnstileToken] = useState(false);
 
   // Turnstile 状态管理
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -103,22 +107,26 @@ export function RembgWorkspace() {
     }
   };
 
-  const processPendingTask = (token: string) => {
-    // Token 获取后，处理所有待处理的任务
-    if (pendingTasks.length > 0) {
-      pendingTasks.forEach((task) => {
-        processImageWithToken(task.id, task.file, token);
-      });
-      setPendingTasks([]);
-    }
+  const processPendingTask = async (token: string) => {
+    const handler = async () => {
+      // Token 获取后，处理所有待处理的任务
+      if (pendingTasks.length > 0 && token) {
+        const task = pendingTasks[0];
+        await processImageWithToken(task.id, task.file, token);
+
+        turnstileRef.current?.reset();
+        setIsFetchingTurnstileToken(true);
+        setPendingTasks(pendingTasks.slice(1));
+      }
+    };
+
+    await handler();
   };
 
   const handleVerify = (newToken: string) => {
     setTurnstileToken(newToken);
     setShowTurnstile(false);
   };
-
-  console.log(turnstileToken);
 
 
   // 处理图片背景移除（入口函数）
@@ -136,12 +144,7 @@ export function RembgWorkspace() {
           progress: 10,
         }
       });
-
-      return;
     }
-
-    // Token 已获取，直接处理
-    await processImageWithToken(id, file, turnstileToken);
   };
 
   const handleError = (error: unknown) => {
@@ -208,12 +211,15 @@ export function RembgWorkspace() {
     return theme === "dark" ? "dark" : "light";
   };
 
+  console.log(turnstileRef.current);
+
+
   useEffect(() => {
-    if (!turnstileToken) {
+    if (!turnstileToken || pendingTasks.length === 0 || isFetchingTurnstileToken) {
       return;
     }
     processPendingTask(turnstileToken);
-  }, [turnstileToken]);
+  }, [turnstileToken, pendingTasks, isFetchingTurnstileToken]);
 
   return (
     <FullscreenDropProvider
@@ -254,14 +260,16 @@ export function RembgWorkspace() {
                 >
                   <div className="flex justify-center">
                     <Turnstile
+                      ref={turnstileRef}
                       siteKey={turnstileSiteKey}
-                      onVerify={handleVerify}
+                      onSuccess={handleVerify}
                       onError={handleError}
                       onExpire={handleExpire}
-                      // sandbox={process.env.NODE_ENV === "development"}
-                      theme={getTurnstileTheme()}
-                      size="normal"
-                      appearance="interaction-only"
+                      options={{
+                        theme: getTurnstileTheme(),
+                        size: "normal",
+                        appearance: "interaction-only",
+                      }}
                     />
                   </div>
                 </motion.div>

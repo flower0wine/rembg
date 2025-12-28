@@ -138,6 +138,7 @@ export function ProcessingAnimation({ status }: ProcessingAnimationProps) {
         >
           {status === ImageStatus.Verify && "验证请求中..."}
           {status === ImageStatus.Processing && "处理中..."}
+          {status === ImageStatus.Waiting && "等待中..."}
         </motion.p>
       </motion.div>
     </div>

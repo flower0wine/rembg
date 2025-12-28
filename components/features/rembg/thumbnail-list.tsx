@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { download } from "@/lib/utils/download.util";
 import { getFileName } from "@/lib/utils/file";
 import { ImageFileInput, useImageFileInput } from "./image-file-input";
+import { ImageStatus } from "./types";
 
 interface ThumbnailListProps {
   images: ImageItem[];
@@ -82,175 +83,180 @@ export function ThumbnailList({
       <div className="overflow-x-auto py-2">
         <div className="flex gap-3">
           <AnimatePresence mode="popLayout">
-            {images.map((image, index) => (
-              <motion.div
-                key={image.id}
-                ref={el => set(image.id, el)}
-                className="relative group shrink-0"
-                initial={{ opacity: 0, scale: 0.8, x: -20 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.8, x: 20 }}
-                transition={{
-                  duration: 0.3,
-                  delay: index * 0.05,
-                }}
-                layout
-              >
-                {/* 缩略图 */}
-                <motion.button
-                  onClick={() => handleSelect(image.id)}
-                  className={cn(
-                    "relative overflow-hidden border-2 transition-all",
-                    selectedId === image.id
-                      ? "border-primary ring-2 ring-primary/20"
-                      : "border-transparent hover:border-primary/50",
-                    defaultItemClassName,
-                    itemClassName,
-                  )}
+            {images.map((image, index) => {
+              const isProcessing = image.status === ImageStatus.Processing
+                || image.status === ImageStatus.Verify || image.status === ImageStatus.Waiting;
+
+              return (
+                <motion.div
+                  key={image.id}
+                  ref={el => set(image.id, el)}
+                  className="relative group shrink-0"
+                  initial={{ opacity: 0, scale: 0.8, x: -20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, x: 20 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: index * 0.05,
+                  }}
+                  layout
                 >
-                  {/* 背景光晕 */}
-                  {selectedId === image.id && (
-                    <motion.div
-                      className="absolute -inset-1 bg-primary/20 rounded-lg blur-md -z-10"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  )}
-
-                  <Image
-                    src={image.originImageUrl}
-                    alt={image.originImageFile.name}
-                    fill
-                    sizes="80px"
-                    className="object-cover hover:scale-105 duration-300 transition-all"
-                    unoptimized
-                  />
-
-                  {/* 状态指示器 */}
-                  {image.status === "processing" && (
-                    <motion.div
-                      className="absolute inset-0 bg-background/50 flex items-center justify-center backdrop-blur-[1px]"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <motion.div
-                        className="size-5 border-2 border-border/30 border-t-foreground rounded-full"
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                      />
-                    </motion.div>
-                  )}
-
-                  {image.status === "error" && (
-                    <motion.div
-                      className="absolute inset-0 bg-destructive/10 flex items-center justify-center"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <motion.span
-                        className="text-white text-lg font-bold"
-                        animate={{
-                          scale: [1, 1.2, 1],
-                        }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                        }}
-                      >
-                        !
-                      </motion.span>
-                    </motion.div>
-                  )}
-
-                  {/* 完成状态的勾选标记 */}
-                  {image.status === "completed" && (
-                    <motion.div
-                      className="absolute bottom-1 right-1 size-5 rounded-full bg-background flex items-center justify-center"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2, type: "spring" }}
-                    >
-                      <svg
-                        className="size-3 text-foreground"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </motion.div>
-                  )}
-                </motion.button>
-
-                {/* 更多按钮 */}
-                {image.processedImageUrl && (
-                  <motion.div
+                  {/* 缩略图 */}
+                  <motion.button
+                    onClick={() => handleSelect(image.id)}
                     className={cn(
-                      "absolute top-1 right-1",
-                      "opacity-0 group-hover:opacity-100 transition-opacity"
+                      "relative overflow-hidden border-2 transition-all",
+                      selectedId === image.id
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-transparent hover:border-primary/50",
+                      defaultItemClassName,
+                      itemClassName,
                     )}
-                    initial={{ scale: 0.8 }}
-                    whileHover={{ scale: 1.05 }}
                   >
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          onClick={e => e.stopPropagation()}
-                          className={cn(
-                            "size-6 rounded-full bg-background border border-border text-foreground",
-                            "flex items-center justify-center shadow-md",
-                            "hover:bg-accent transition-colors"
-                          )}
-                        >
-                          <MoreVertical className="size-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="top" align="center" className="w-40">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            handleDownload(image);
+                    {/* 背景光晕 */}
+                    {selectedId === image.id && (
+                      <motion.div
+                        className="absolute -inset-1 bg-primary/20 rounded-lg blur-md -z-10"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    )}
+
+                    <Image
+                      src={image.originImageUrl}
+                      alt={image.originImageFile.name}
+                      fill
+                      sizes="80px"
+                      className="object-cover hover:scale-105 duration-300 transition-all"
+                      unoptimized
+                    />
+
+                    {/* 状态指示器 */}
+                    {isProcessing && (
+                      <motion.div
+                        className="absolute inset-0 bg-background/50 flex items-center justify-center backdrop-blur-[1px]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        <motion.div
+                          className="size-5 border-2 border-border/30 border-t-foreground rounded-full"
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                        />
+                      </motion.div>
+                    )}
+
+                    {image.status === "error" && (
+                      <motion.div
+                        className="absolute inset-0 bg-destructive/10 flex items-center justify-center"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        <motion.span
+                          className="text-white text-lg font-bold"
+                          animate={{
+                            scale: [1, 1.2, 1],
+                          }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
                           }}
                         >
-                          <Download className="size-4 mr-2" />
-                          下载
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const link = image.processedImageUrl || image.originImageUrl;
-                            navigator.clipboard.writeText(link);
-                          }}
+                          !
+                        </motion.span>
+                      </motion.div>
+                    )}
+
+                    {/* 完成状态的勾选标记 */}
+                    {image.status === "completed" && (
+                      <motion.div
+                        className="absolute bottom-1 right-1 size-5 rounded-full bg-background flex items-center justify-center"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2, type: "spring" }}
+                      >
+                        <svg
+                          className="size-3 text-foreground"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
                         >
-                          <Link2 className="size-4 mr-2" />
-                          复制链接
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemove(image.id);
-                            remove(image.id);
-                          }}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="size-4 mr-2" />
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </motion.div>
-                )}
-              </motion.div>
-            ))}
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      </motion.div>
+                    )}
+                  </motion.button>
+
+                  {/* 更多按钮 */}
+                  {image.processedImageUrl && (
+                    <motion.div
+                      className={cn(
+                        "absolute top-1 right-1",
+                        "opacity-0 group-hover:opacity-100 transition-opacity"
+                      )}
+                      initial={{ scale: 0.8 }}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            onClick={e => e.stopPropagation()}
+                            className={cn(
+                              "size-6 rounded-full bg-background border border-border text-foreground",
+                              "flex items-center justify-center shadow-md",
+                              "hover:bg-accent transition-colors"
+                            )}
+                          >
+                            <MoreVertical className="size-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="top" align="center" className="w-40">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              handleDownload(image);
+                            }}
+                          >
+                            <Download className="size-4 mr-2" />
+                            下载
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const link = image.processedImageUrl || image.originImageUrl;
+                              navigator.clipboard.writeText(link);
+                            }}
+                          >
+                            <Link2 className="size-4 mr-2" />
+                            复制链接
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemove(image.id);
+                              remove(image.id);
+                            }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="size-4 mr-2" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </motion.div>
+                  )}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
       </div>
