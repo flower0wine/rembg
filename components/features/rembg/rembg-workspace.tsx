@@ -203,9 +203,6 @@ export function RembgWorkspace() {
     return theme === "dark" ? "dark" : "light";
   };
 
-  console.log(turnstileRef.current, turnstileToken, pendingTasks, isFetchingTurnstileToken);
-
-
   useEffect(() => {
     if (!turnstileToken || pendingTasks.length === 0 || isFetchingTurnstileToken) {
       return;
@@ -246,7 +243,6 @@ export function RembgWorkspace() {
               className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-999 flex justify-center transition-all duration-300"
               style={{
                 opacity: showTurnstile ? 1 : 0,
-                transform: `translateX(-50%) scale(${showTurnstile ? 1 : 0.95}) translateY(${showTurnstile ? 0 : -10}px)`,
                 pointerEvents: showTurnstile ? "auto" : "none",
               }}
             >
