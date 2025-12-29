@@ -33,6 +33,8 @@ import { UploadPanel } from "./upload-panel";
 
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!;
 
+interface Task { id: string; file: File }
+
 export function RembgWorkspace() {
   const images = useAtomValue(imagesAtom);
   const [selectedId, setSelectedId] = useAtom(selectedImageIdAtom);
@@ -51,13 +53,14 @@ export function RembgWorkspace() {
   const [showTurnstile, setShowTurnstile] = useState(true); // 初始显示（Managed 会自动处理）
 
   // 待处理任务队列
-  const [pendingTasks, setPendingTasks] = useState<Array<{ id: string; file: File }>>([]);
+  const [pendingTasks, setPendingTasks] = useState<Array<Task>>([]);
 
   // 使用背景移除API
   const { mutateAsync: removeBackground } = useRemoveBackground();
 
   // 实际处理图片背景移除（带 token）
-  const processImageWithToken = async (id: string, file: File, token: string) => {
+  const processImageWithToken = async (task: Task, token: string) => {
+    const { id, file } = task;
     try {
       // 更新状态为处理中
       updateImage({
@@ -74,7 +77,6 @@ export function RembgWorkspace() {
         turnstileToken: token
       });
 
-      // 创建处理后的图片URL
       const processedUrl = result.url;
 
       // 更新为完成状态
@@ -112,11 +114,11 @@ export function RembgWorkspace() {
       // Token 获取后，处理所有待处理的任务
       if (pendingTasks.length > 0 && token) {
         const task = pendingTasks[0];
-        await processImageWithToken(task.id, task.file, token);
-
+        setPendingTasks(prev => prev.slice(1));
         turnstileRef.current?.reset();
         setIsFetchingTurnstileToken(true);
-        setPendingTasks(pendingTasks.slice(1));
+
+        await processImageWithToken(task, token);
       }
     };
 
@@ -126,14 +128,36 @@ export function RembgWorkspace() {
   const handleVerify = (newToken: string) => {
     setTurnstileToken(newToken);
     setShowTurnstile(false);
+    setIsFetchingTurnstileToken(false);
   };
 
 
-  // 处理图片背景移除（入口函数）
-  const processImage = async (id: string, file: File) => {
-    // 检查 Turnstile token
-    if (!turnstileToken) {
-      // Token 还未获取，将任务加入待处理队列
+  const handleError = (error: unknown) => {
+    setTurnstileToken(null);
+    setIsFetchingTurnstileToken(false);
+    console.error(toError(error).message);
+  };
+
+  const handleExpire = () => {
+    setTurnstileToken(null);
+    setShowTurnstile(true);
+    setIsFetchingTurnstileToken(false);
+  };
+
+  // 处理文件选择
+  const handleFilesSelected = async (files: File[]) => {
+    for (const file of files) {
+      const id = uuidv4();
+      const imageItem: ImageItem = {
+        id,
+        originImageFile: file,
+        originImageUrl: URL.createObjectURL(file),
+        status: ImageStatus.Verify,
+        progress: 0,
+      };
+
+      addImages([imageItem]);
+
       setPendingTasks(prev => [...prev, { id, file }]);
 
       // 更新状态为等待验证
@@ -144,40 +168,6 @@ export function RembgWorkspace() {
           progress: 10,
         }
       });
-    }
-  };
-
-  const handleError = (error: unknown) => {
-    setTurnstileToken(null);
-    console.error(toError(error).message);
-  };
-
-  const handleExpire = () => {
-    setTurnstileToken(null);
-    setShowTurnstile(true);
-  };
-
-  // 处理文件选择
-  const handleFilesSelected = async (files: File[]) => {
-    const newImages: ImageItem[] = [];
-
-    for (const file of files) {
-      const imageItem: ImageItem = {
-        id: uuidv4(),
-        originImageFile: file,
-        originImageUrl: URL.createObjectURL(file),
-        status: ImageStatus.Verify,
-        progress: 0,
-      };
-
-      newImages.push(imageItem);
-    }
-
-    addImages(newImages);
-
-    // 处理每张图片
-    for (const image of newImages) {
-      processImage(image.id, image.originImageFile);
     }
   };
 
@@ -211,7 +201,7 @@ export function RembgWorkspace() {
     return theme === "dark" ? "dark" : "light";
   };
 
-  console.log(turnstileRef.current);
+  console.log(turnstileRef.current, turnstileToken, pendingTasks, isFetchingTurnstileToken);
 
 
   useEffect(() => {
@@ -249,32 +239,28 @@ export function RembgWorkspace() {
 
           {/* Turnstile 验证组件 */}
           <div className="relative h-0 pointer-events-none z-999">
-            <AnimatePresence>
-              {showTurnstile && (
-                <motion.div
-                  className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-999"
-                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                >
-                  <div className="flex justify-center">
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={turnstileSiteKey}
-                      onSuccess={handleVerify}
-                      onError={handleError}
-                      onExpire={handleExpire}
-                      options={{
-                        theme: getTurnstileTheme(),
-                        size: "normal",
-                        appearance: "interaction-only",
-                      }}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <motion.div
+              className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-999"
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              <div className="flex justify-center">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={turnstileSiteKey}
+                  onSuccess={handleVerify}
+                  onError={handleError}
+                  onExpire={handleExpire}
+                  options={{
+                    theme: getTurnstileTheme(),
+                    size: "normal",
+                    appearance: "interaction-only",
+                  }}
+                />
+              </div>
+            </motion.div>
           </div>
 
           {/* 缩略图列表 */}

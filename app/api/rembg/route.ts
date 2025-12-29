@@ -1,6 +1,6 @@
+import type { TurnstileServerValidationResponse } from "@marsidev/react-turnstile";
 import type { NextRequest } from "next/server";
 import dayjs from "dayjs";
-import { validateTurnstileToken } from "next-turnstile";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { uploadImageToR2 } from "@/lib/request/api/storage";
@@ -9,6 +9,9 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserSubscription } from "@/lib/supabase/subscription";
 import { toError } from "@/lib/utils";
 import { getFileExtension } from "@/lib/utils/file";
+
+const verifyEndpoint = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+
 
 const turnstileSecret = process.env.TURNSTILE_SECRET_KEY!;
 const rembgServiceUrl = process.env.REMBG_SERVICE_URL!;
@@ -86,15 +89,27 @@ export async function POST(request: NextRequest) {
 
     const userIp = request.headers.get("x-forwarded-for") || undefined;
 
-    const result = await validateTurnstileToken({
-      token: turnstileToken,
-      secretKey: turnstileSecret,
-      // sandbox: process.env.NODE_ENV === "development",
-      remoteip: userIp,
-    });
+    try {
+      const res = await fetch(verifyEndpoint, {
+        method: "POST",
+        body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}&remoteip=${userIp}`,
+        headers: {
+          "content-type": "application/x-www-form-urlencoded"
+        }
+      });
 
-    if (!result.success) {
-      console.error("验证失败:", result);
+      const result = (await res.json()) as TurnstileServerValidationResponse;
+
+      if (!result.success) {
+        console.error("验证失败:", result);
+        return NextResponse.json(
+          { error: "验证失败，请重试" },
+          { status: 403 }
+        );
+      }
+    }
+    catch (error) {
+      console.error("Turnstile 检查失败:", error);
       return NextResponse.json(
         { error: "验证失败，请重试" },
         { status: 403 }
