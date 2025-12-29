@@ -67,55 +67,55 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // 验证 Turnstile token
+  const turnstileToken = request.headers.get("X-Turnstile-Token");
+
+  if (!turnstileToken) {
+    console.error("未提供验证令牌");
+    return NextResponse.json(
+      { error: "抱歉！处理过程遇到错误，请稍后重试" },
+      { status: 400 }
+    );
+  }
+
+  if (!turnstileSecret) {
+    console.error("未配置 TURNSTILE_SECRET_KEY");
+    return NextResponse.json(
+      { error: "服务配置错误" },
+      { status: 500 }
+    );
+  }
+
+  const userIp = request.headers.get("x-forwarded-for") || undefined;
+
   try {
-    // 验证 Turnstile token
-    const turnstileToken = request.headers.get("X-Turnstile-Token");
-
-    if (!turnstileToken) {
-      console.error("未提供验证令牌");
-      return NextResponse.json(
-        { error: "验证失败" },
-        { status: 400 }
-      );
-    }
-
-    if (!turnstileSecret) {
-      console.error("未配置 TURNSTILE_SECRET_KEY");
-      return NextResponse.json(
-        { error: "服务配置错误" },
-        { status: 500 }
-      );
-    }
-
-    const userIp = request.headers.get("x-forwarded-for") || undefined;
-
-    try {
-      const res = await fetch(verifyEndpoint, {
-        method: "POST",
-        body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}&remoteip=${userIp}`,
-        headers: {
-          "content-type": "application/x-www-form-urlencoded"
-        }
-      });
-
-      const result = (await res.json()) as TurnstileServerValidationResponse;
-
-      if (!result.success) {
-        console.error("验证失败:", result);
-        return NextResponse.json(
-          { error: "验证失败，请重试" },
-          { status: 403 }
-        );
+    const res = await fetch(verifyEndpoint, {
+      method: "POST",
+      body: `secret=${encodeURIComponent(turnstileSecret)}&response=${encodeURIComponent(turnstileToken)}&remoteip=${userIp}`,
+      headers: {
+        "content-type": "application/x-www-form-urlencoded"
       }
-    }
-    catch (error) {
-      console.error("Turnstile 检查失败:", error);
+    });
+
+    const result = (await res.json()) as TurnstileServerValidationResponse;
+
+    if (!result.success) {
+      console.error("验证失败:", result);
       return NextResponse.json(
-        { error: "验证失败，请重试" },
+        { error: "抱歉！处理过程遇到错误，请稍后重试" },
         { status: 403 }
       );
     }
+  }
+  catch (error) {
+    console.error("Turnstile 检查失败:", error);
+    return NextResponse.json(
+      { error: "抱歉！处理过程遇到错误，请稍后重试" },
+      { status: 403 }
+    );
+  }
 
+  try {
     // 验证用户身份
     const supabase = await createClient();
     const { data, error: authError } = await supabase.auth.getClaims();

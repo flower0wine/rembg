@@ -135,6 +135,8 @@ export function RembgWorkspace() {
   const handleError = (error: unknown) => {
     setTurnstileToken(null);
     setIsFetchingTurnstileToken(false);
+
+    toast.error("抱歉！处理过程遇到错误，请稍后重试");
     console.error(toError(error).message);
   };
 
@@ -237,30 +239,30 @@ export function RembgWorkspace() {
                 </div>
               )}
 
-          {/* Turnstile 验证组件 */}
+          {/* Turnstile 验证组件 - 使用动画但保持 ref 存在 */}
           <div className="relative h-0 pointer-events-none z-999">
-            <motion.div
-              className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-999"
-              initial={{ opacity: 0, scale: 0.95, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
+            {/* Turnstile 始终挂载以保持 ref，通过 CSS 控制可见性 */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-999 flex justify-center transition-all duration-300"
+              style={{
+                opacity: showTurnstile ? 1 : 0,
+                transform: `translateX(-50%) scale(${showTurnstile ? 1 : 0.95}) translateY(${showTurnstile ? 0 : -10}px)`,
+                pointerEvents: showTurnstile ? "auto" : "none",
+              }}
             >
-              <div className="flex justify-center">
-                <Turnstile
-                  ref={turnstileRef}
-                  siteKey={turnstileSiteKey}
-                  onSuccess={handleVerify}
-                  onError={handleError}
-                  onExpire={handleExpire}
-                  options={{
-                    theme: getTurnstileTheme(),
-                    size: "normal",
-                    appearance: "interaction-only",
-                  }}
-                />
-              </div>
-            </motion.div>
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={turnstileSiteKey}
+                onSuccess={handleVerify}
+                onError={handleError}
+                onExpire={handleExpire}
+                options={{
+                  theme: getTurnstileTheme(),
+                  size: "normal",
+                  appearance: "interaction-only",
+                }}
+              />
+            </div>
           </div>
 
           {/* 缩略图列表 */}
